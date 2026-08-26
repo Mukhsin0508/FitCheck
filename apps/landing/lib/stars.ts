@@ -1,6 +1,8 @@
 export type StarsCache = { count: number; at: number };
 
-export const STARS_CACHE_TTL_MS = 10 * 60 * 1000;
+// Short: the cache only seeds the first paint on navigation; the live poll
+// (see components/github-stars.tsx) keeps the number in sync after that.
+export const STARS_CACHE_TTL_MS = 60 * 1000;
 
 export function formatCompactStars(n: number): string {
   if (n < 1000) return String(n);

@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { REPO_SLUG, REPO_URL } from "@/lib/site";
 import { formatCompactStars, parseStargazers, parseStarsCache } from "@/lib/stars";
 
 const CACHE_KEY = "fitcheck:stars";
+// GitHub's unauthenticated API allows 60 requests/hour per IP; one poll a
+// minute sits exactly on that budget, so failures just keep the last count.
+const POLL_MS = 60 * 1000;
 
-// Dedupes the request across the three components mounting at once.
-let inflight: Promise<number | null> | null = null;
+// One shared store: every star component on the page subscribes to the same
+// count, one fetch serves them all, and one timer keeps it live.
+let count: number | null = null;
+let inflight = false;
+let timer: number | null = null;
+const listeners = new Set<() => void>();
 
 function readCache(): number | null {
   try {
@@ -17,42 +24,71 @@ function readCache(): number | null {
   }
 }
 
-function writeCache(count: number): void {
+function writeCache(next: number): void {
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ count, at: Date.now() }));
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ count: next, at: Date.now() }));
   } catch {
     // storage unavailable; skip caching
   }
 }
 
-function fetchStars(): Promise<number | null> {
-  const cached = readCache();
-  if (cached !== null) return Promise.resolve(cached);
-  inflight ??= fetch(`https://api.github.com/repos/${REPO_SLUG}`)
-    .then(async (res) => {
-      if (!res.ok) return null;
-      const count = parseStargazers(await res.json());
-      if (count !== null) writeCache(count);
-      return count;
-    })
-    .catch(() => null)
-    .finally(() => {
-      inflight = null;
+async function refresh(): Promise<void> {
+  if (inflight) return;
+  inflight = true;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO_SLUG}`, {
+      headers: { accept: "application/vnd.github+json" },
     });
-  return inflight;
+    if (!res.ok) return;
+    const next = parseStargazers(await res.json());
+    if (next !== null && next !== count) {
+      count = next;
+      writeCache(next);
+      for (const notify of listeners) notify();
+    }
+  } catch {
+    // offline or rate-limited; keep showing the last known count
+  } finally {
+    inflight = false;
+  }
+}
+
+function onVisibilityChange(): void {
+  if (!document.hidden) void refresh();
+}
+
+function subscribe(notify: () => void): () => void {
+  listeners.add(notify);
+  if (listeners.size === 1) {
+    if (count === null) {
+      const cached = readCache();
+      if (cached !== null) {
+        count = cached;
+        for (const l of listeners) l();
+      }
+    }
+    void refresh();
+    timer = window.setInterval(() => {
+      if (!document.hidden) void refresh();
+    }, POLL_MS);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+  }
+  return () => {
+    listeners.delete(notify);
+    if (listeners.size === 0 && timer !== null) {
+      window.clearInterval(timer);
+      timer = null;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    }
+  };
 }
 
 export function useGitHubStars(): string | null {
-  const [stars, setStars] = useState<number | null>(null);
-  useEffect(() => {
-    let alive = true;
-    void fetchStars().then((n) => {
-      if (alive && n !== null) setStars(n);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  const stars = useSyncExternalStore(
+    subscribe,
+    () => count,
+    () => null,
+  );
   return stars === null ? null : formatCompactStars(stars);
 }
 

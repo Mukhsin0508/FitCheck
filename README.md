@@ -1,45 +1,82 @@
+<div align="center">
+
+<img src="apps/mobile/assets/images/icon.png" width="96" alt="FitCheck — an arched dressing mirror with a lime check" />
+
 # FitCheck
 
 **See it on you before you buy it.**
 
-FitCheck is a virtual try-on shopping app. A few selfies become your photoreal
-avatar. Any garment from the catalog — or any product link you paste — renders
-on *your* body in seconds. Like it? One tap opens the store and you buy it
-there. Merchants pay us an affiliate commission; you never pay FitCheck
-anything.
+A few selfies become your photoreal avatar. Any garment renders on *your* body in seconds.
+Love it? One tap opens the store. Merchants pay the commission — you never pay FitCheck anything.
 
-Built by [Mukhsin Mukhtorov](https://github.com/Mukhsin0508). MIT licensed.
+[**▶ Try the live app — right in your browser, nothing to install**](https://try-fitcheck.vercel.app)
 
-<p>
-  <img src="apps/landing/public/media/p01-trench.jpg" width="19%" alt="Catalog: trench coat" />
-  <img src="apps/landing/public/media/fit-trench.jpg" width="19%" alt="Rendered on the avatar" />
-  <img src="apps/landing/public/media/p07-slip-dress.jpg" width="19%" alt="Catalog: slip dress" />
-  <img src="apps/landing/public/media/fit-slip.jpg" width="19%" alt="Rendered on the avatar" />
-  <img src="apps/landing/public/media/avatar.jpg" width="19%" alt="Demo avatar" />
-</p>
+[![Live demo](https://img.shields.io/badge/demo-try--fitcheck.vercel.app-D4F53C?labelColor=131313)](https://try-fitcheck.vercel.app)
+[![GitHub stars](https://img.shields.io/github/stars/Mukhsin0508/FitCheck?style=flat&labelColor=131313&color=D4F53C)](https://github.com/Mukhsin0508/FitCheck/stargazers)
+[![License: MIT](https://img.shields.io/github/license/Mukhsin0508/FitCheck?labelColor=131313&color=F6F4EF)](LICENSE)
+[![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-131313?logo=expo&logoColor=white)](apps/mobile)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-131313?logo=nextdotjs&logoColor=white)](apps/landing)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-131313?logo=typescript&logoColor=white)](tsconfig.base.json)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-D4F53C?labelColor=131313)](CONTRIBUTING.md)
 
-*All imagery generated with Higgsfield Soul.*
+<img src="apps/landing/public/media/p01-trench.jpg" width="19%" alt="Catalog: trench coat" />
+<img src="apps/landing/public/media/fit-trench.jpg" width="19%" alt="The trench, rendered on the avatar" />
+<img src="apps/landing/public/media/p07-slip-dress.jpg" width="19%" alt="Catalog: slip dress" />
+<img src="apps/landing/public/media/fit-slip.jpg" width="19%" alt="The slip dress, rendered on the avatar" />
+<img src="apps/landing/public/media/avatar.jpg" width="19%" alt="The demo avatar" />
+
+*Garment on the left, that garment on the avatar next to it. Every image in this repo was generated with [Higgsfield Soul](https://higgsfield.ai).*
+
+</div>
+
+---
+
+## Try it in 10 seconds
+
+The full app runs **inside the landing page** — an Expo web build in an iPhone frame at
+[try-fitcheck.vercel.app](https://try-fitcheck.vercel.app). Set up the demo avatar, browse
+352 pieces, try them on, save fits, build a share card. No clone, no install, no API key.
+
+To run it as a real native app with live AI renders, see [Run it](#run-it).
 
 ## Why this exists
 
-Try-on tech and affiliate commerce both work; nobody has closed the loop
-between them at scale. Doji raised $14M and has no purchase flow. Google Doppl
-has no monetization. Whering has 10M users and no photoreal try-on. FitCheck's
-whole product is the loop: **try-on → want it → tracked checkout**.
+Try-on tech and affiliate commerce both work; nobody has closed the loop between them at
+scale. Doji raised $14M and has no purchase flow. Google Doppl has no monetization.
+Whering has 10M users and no photoreal try-on. FitCheck's whole product is the loop:
+**try-on → want it → tracked checkout**.
 
 The unit economics carry it:
 
-- A try-on render costs **$0.04–0.09** (FASHN $0.075, Kling $0.07, Higgsfield
-  Soul ≈ $0.09).
-- Expected commission per try-on session at fashion baselines is
-  **$0.24–0.75** (AOV $80–115 × 8–16% commission × 2.4% baseline conversion,
-  lifted 27–94% by try-on per Shopify/Google studies).
-- That's 3–10× margin per session before the ~26% apparel-return haircut.
+| | |
+|---|---|
+| Cost per try-on render | **$0.04–0.09** (FASHN $0.075 · Kling $0.07 · Higgsfield ≈ $0.09) |
+| Expected commission per try-on session | **$0.24–0.75** (AOV $80–115 × 8–16% commission × 2.4% baseline conversion, lifted 27–94% by try-on per Shopify/Google studies) |
+| Margin per session | **3–10×**, before the ~26% apparel-return haircut |
 
-So: cap free renders, cache aggressively (same user + same garment = same
-render), log the cost of every render, and prioritize affiliate programs with
-30-day cookies and 10%+ commissions (SHEIN, H&M, Farfetch tier) over weak
-rails like Amazon Fashion's 4%/24h.
+So the engineering follows the economics: cap free renders, cache aggressively (same
+avatar + same garment = same render, $0.00), log the cost of every render, and prioritize
+affiliate programs with 30-day cookies and 10%+ commissions over weak rails like Amazon
+Fashion's 4%/24h.
+
+## How the loop works
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as You
+    participant App as apps/mobile (Expo)
+    participant HF as Higgsfield platform API
+    participant Store as Merchant
+
+    U->>App: a few selfies → avatar
+    U->>App: pick a garment (catalog or pasted link)
+    App->>HF: POST /{model} — prompt + [person, garment] images
+    HF-->>App: render: the garment on your body (~6s, ~$0.09)
+    U->>App: love it → tap Buy
+    App->>Store: affiliate deep link, subid = user.session.product.render
+    Store-->>App: postback → commission attributed to that exact try-on
+```
 
 ## What's in the box
 
@@ -47,96 +84,89 @@ rails like Amazon Fashion's 4%/24h.
 fitcheck/
 ├── apps/
 │   ├── mobile/       # Expo (React Native) app — the product
-│   └── landing/      # Next.js landing page → Vercel
+│   └── landing/      # Next.js landing page, with the app embedded live
 └── packages/
-    ├── higgsfield/   # Typed Higgsfield API client (Soul avatars, try-on, jobs)
-    ├── tryon/        # Provider-agnostic try-on: Higgsfield ⇄ FASHN ⇄ Kling
+    ├── higgsfield/   # Typed Higgsfield API client (try-on, jobs, uploads, cost accounting)
+    ├── tryon/        # Provider-agnostic try-on: Higgsfield ⇄ FASHN ⇄ Kling ⇄ mock
     ├── affiliates/   # Deep links + subid attribution + postback parsing
-    └── catalog/      # Normalized product feed (216 items, 2 categories)
+    └── catalog/      # Normalized product feed (352 items, 4 categories)
 ```
 
-### `@fitcheck/higgsfield`
+### `@fitcheck/higgsfield` — the typed API client
 
-A typed client for the Higgsfield **platform API**
-(`https://platform.higgsfield.ai`), speaking the same wire protocol as the
-official `@higgsfield/client` v2 SDK: auth is a single
-`authorization: Key <KEY_ID:KEY_SECRET>` header, a generation is
-`POST /{endpointSlug}` (slugs are model ids like
-`higgsfield-ai/soul/standard` — no `/v1` prefix anywhere) with the input as
-the JSON body, and the response is a flat
-`{ request_id, status, images?, ... }` you poll at
-`GET /requests/{id}/status` until terminal
-(`queued | in_progress | completed | failed | nsfw | canceled`). Endpoint
-paths live in one file (`src/endpoints.ts`), model slugs as data in another
-(`src/models.ts`), response schemas in a third (`src/schemas.ts`).
+Speaks the real Higgsfield **platform API** wire protocol, verified against the official
+`@higgsfield/client` v2 SDK and the published OpenAPI schema
+([snapshot in `docs/`](docs/higgsfield-openapi.json)):
+
+- Auth is one header: `authorization: Key <KEY_ID:KEY_SECRET>`, plus a custom user-agent
+  (the platform WAF rejects default agents).
+- A generation is `POST /{model-slug}` with the input as the JSON body; the response is a
+  flat `{ request_id, status, images? }` you poll at `GET /requests/{id}/status`.
+- Try-on runs on `higgsfield-ai/popcorn/auto` (prod) or `nano-banana-2/image-to-image`
+  (dev), contract `{ prompt, image_urls: [person, garment], aspect_ratio }`.
+- File uploads go through `POST /files/generate-upload-url`, then a `PUT` with the
+  returned `upload_headers` **only** — adding your own content-type breaks the pre-signed
+  S3 signature.
 
 ```ts
-const hf = HiggsfieldClient.create({ credentials: 'KEY_ID:KEY_SECRET' });
+const hf = HiggsfieldClient.create({ credentials: "KEY_ID:KEY_SECRET" });
 
 // The core loop: garment → a photo of the user wearing it
 const render = await hf.tryon.renderAndWait({
-  soulId: user.soulId,
+  personImage: user.avatarUrl,
   garmentImage: product.imageUrl,
-  category: 'dress',
+  category: "dress",
 });
 
-// Billing-grade quote before submitting (POST /estimate/{endpoint})
-const quote = await hf.estimateRemote('higgsfield-ai/soul/standard', { prompt });
+// Billing-grade quote before submitting
+const quote = await hf.estimateRemote("higgsfield-ai/popcorn/auto", { prompt });
 ```
 
-It ships retries with jittered backoff (429/5xx and the account concurrency
-cap, honoring `Retry-After` with a 30s ceiling), polling at the documented
-cadence (2s × 1.5 backoff capped at 10s, plus 0–500ms jitter), an error
-taxonomy (401 auth, 403 insufficient credits, 422 validation…), per-render
-cost accounting (`onUsage` + `estimateRemote`), and a full in-memory mock
-(`HiggsfieldClient.mock()`) that speaks the real protocol through the real
-transport/retry/polling stack, offline.
+It ships retries with jittered backoff (429/5xx and the account concurrency cap, honoring
+`Retry-After`), polling at the documented cadence, an error taxonomy (401 auth, 403
+insufficient credits, 422 validation…), per-render cost accounting (`onUsage` +
+`estimateRemote`), and a full in-memory mock (`HiggsfieldClient.mock()`) that speaks the
+real protocol through the real transport/retry/polling stack, offline.
 
-Two caveats, marked loudly in the source: the try-on slug is **unverified**
-(not in the public docs yet — override via `tryOnEndpoint`), and there is
-**no public Soul ID API** yet, so `hf.souls.*` throws a clear error until you
-configure `soulsBasePath` (demo mode never calls it). ⚠️ Result URLs are
-pre-signed CDN links that **expire (~7 days)** — download or persist renders
-promptly.
+Three things worth knowing:
 
-**Which client to use:** on a Node-only server, Higgsfield's official
-`@higgsfield/client` works great; this package exists for typed,
-multi-runtime use (Node, browsers, React Native/Hermes) with an offline mock
-mode, a FitCheck-shaped error taxonomy, and spend accounting hooks.
+- **Keys are environment-bound.** Dev-dashboard keys only authenticate against the dev
+  API host; production keys against `platform.higgsfield.ai`. A 401 with a valid key
+  usually means the wrong host.
+- **Result URLs expire (~7 days).** They're pre-signed CDN links — download or persist
+  renders promptly.
+- **Keep credentials server-side in production.** Demo mode needs none; the production
+  design puts keys behind a thin FitCheck server, never in the shipped app.
 
-**Keep it server-side.** The `KEY_ID:KEY_SECRET` pair never ships in the app;
-the mobile client is designed to talk to a thin FitCheck API that holds the
-credentials.
+### `@fitcheck/tryon` — the provider abstraction
 
-### `@fitcheck/tryon`
+Pick a provider per garment category, fall through on failure, cache renders (the avatar
+version is part of the cache key, so a new avatar invalidates everything), and log every
+render's cost — cached hits log $0.00.
 
-The provider abstraction: pick a provider per garment category, fall through
-on failure, cache renders (avatar version is part of the cache key, so a new
-avatar invalidates everything), and log every render's cost — cached hits log
-$0.00.
+### `@fitcheck/affiliates` — where the money comes back
 
-### `@fitcheck/affiliates`
+One module per network — Awin, Rakuten, CJ, Partnerize, direct — building correct deep
+links with a subid that encodes `user.session.product.render`, plus postback parsing that
+turns network callbacks into normalized commission events. This is how a purchase gets
+attributed back to the try-on that sold it.
 
-One module per network — Awin, Rakuten, CJ, Partnerize, direct — building
-correct deep links with a subid that encodes `user.session.product.render`,
-plus postback parsing that turns network callbacks into normalized commission
-events. This is how a purchase gets attributed back to the try-on that sold it.
+### `apps/mobile` — the product
 
-### `apps/mobile`
-
-Expo SDK 57 / React Native. Onboarding (camera selfies → avatar), a 216-item
-catalog with category filters, the try-on screen, a closet, a share-card
-generator (side-by-side or 2×2 grid, watermarked), paste-a-URL try-on, and
-affiliate click-out. Runs fully offline in demo mode: a mock provider with a
-realistic render delay stands in for the API, so the whole loop works with
-zero spend.
+Expo SDK 57 / React Native, expo-router, React Compiler. Onboarding (camera selfies →
+avatar), a 352-item catalog across four categories with editorial filters, the try-on
+screen with a render theatre, a closet, a share-card generator (side-by-side or 2×2 grid,
+watermarked), paste-a-URL try-on, and affiliate click-out. Runs fully offline in demo
+mode; add credentials and the same screens do real AI renders.
 
 ## Run it
 
 ```bash
+git clone https://github.com/Mukhsin0508/FitCheck.git
+cd FitCheck
 npm install
 
-# The app (Expo — press i for iOS simulator, a for Android)
+# The app (Expo — press i for the iOS simulator, a for Android)
 npm run mobile
 
 # The landing page
@@ -147,36 +177,50 @@ npm run typecheck
 npm test
 ```
 
-Node ≥ 20. No env vars needed for demo mode.
+Node ≥ 20. **No env vars needed** — demo mode ships with a full offline provider.
 
-## Deploy the landing page
+### Real AI renders
 
-The landing lives in `apps/landing` (Next.js). On [Vercel](https://vercel.com):
-import the repo, set **Root Directory** to `apps/landing`, and deploy —
-no other configuration.
+Create `apps/mobile/.env` (gitignored) with your Higgsfield platform key:
+
+```bash
+EXPO_PUBLIC_HIGGSFIELD_CREDENTIALS=KEY_ID:KEY_SECRET
+```
+
+That's it for production keys (`https://platform.higgsfield.ai` is the default host).
+Renders cost ~$0.09 and take ~6 seconds; every render logs its cost in the app. If the
+API fails for any reason, the app falls back to the demo provider instead of breaking the
+flow.
 
 ## Privacy, non-negotiable
 
-Selfies exist to build your avatar and for nothing else. In demo mode they
-never leave the phone. The production design encrypts user photos, never uses
-them for training, and deleting your account purges photos and renders. In the
-app, "Delete everything on this phone" removes selfie files from disk and
-resets the stored identity — not just UI state.
+Selfies exist to build your avatar and for nothing else. In demo mode they never leave
+the phone. The production design encrypts user photos, never uses them for training, and
+deleting your account purges photos and renders. In the app, "Delete everything on this
+phone" removes selfie files from disk and resets the stored identity — not just UI state.
 
-## v1 definition of done
+## Roadmap
 
-- [x] Selfies → avatar → try-on render in < 10s → affiliate click-out with a
-      correct per-network subid
-- [x] Postback parsing that turns a network callback into an attributed
-      commission event (`parsePostback`)
-- [x] Share card ships with every render; render cost per user logged
-- [x] 200+ catalog items across 2 categories with validated feed ingestion
-- [x] Client speaks the real platform protocol (verified against
-      `@higgsfield/client` v2 and the OpenBinge integration)
-- [ ] Live affiliate program credentials (Awin/Rakuten/CJ/Partnerize accounts)
-- [ ] Verified try-on endpoint slug + public Soul ID API from Higgsfield
-- [ ] FitCheck server (keeps API credentials off the device, receives postbacks)
+- [x] Selfies → avatar → try-on render in under 10s → affiliate click-out with a correct per-network subid
+- [x] Postback parsing that turns a network callback into an attributed commission event
+- [x] Share card with every render; render cost per user logged
+- [x] 352 catalog items across 4 categories with validated feed ingestion
+- [x] Client speaks the real platform protocol (verified against `@higgsfield/client` v2 and the published OpenAPI schema)
+- [x] Live renders verified end to end on-device (~$0.09, ~6s per render)
+- [x] The full app playable in the browser on the landing page
+- [ ] Thin FitCheck server (keeps API credentials off the device, receives postbacks, rate-limits web renders)
+- [ ] Live affiliate program credentials (Awin / Rakuten / CJ / Partnerize accounts)
+- [ ] Avatar identity API (Higgsfield Soul ID) when it goes public
+
+## Contributing
+
+Issues and PRs are welcome — [CONTRIBUTING.md](CONTRIBUTING.md) has the short version:
+run `npm run typecheck && npm test` before you push, anything touching money
+(`packages/affiliates`) needs tests, and copy follows the house style (sentence case,
+contractions, no "seamless").
 
 ## License
 
-MIT
+[MIT](LICENSE) © [Mukhsin Mukhtorov](https://github.com/Mukhsin0508)
+
+If FitCheck is useful to you, a ⭐ genuinely helps it get found.
