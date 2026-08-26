@@ -1,0 +1,26 @@
+{
+  "name": "fitcheck",
+  "private": true,
+  "version": "0.1.0",
+  "description": "FitCheck — see any garment on the internet on yourself before buying.",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "~5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build:landing": "npm run build --workspace apps/landing",
+    "mobile": "npm run start --workspace apps/mobile",
+    "landing": "npm run dev --workspace apps/landing"
+  }
+}

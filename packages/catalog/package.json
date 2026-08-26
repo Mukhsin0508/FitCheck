@@ -1,0 +1,19 @@
+{
+  "name": "@fitcheck/catalog",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Seeded affiliate catalog: 200+ normalized items across categories, generated deterministically from real program economics.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fitcheck/affiliates": "*"
+  }
+}

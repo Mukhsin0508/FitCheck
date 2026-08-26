@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "FitCheck",
+    "slug": "fitcheck",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "fitcheck",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "FitCheck uses your camera to take the selfies that build your avatar. Photos stay on your device until you create an avatar, and are never used for training.",
+        "NSPhotoLibraryUsageDescription": "FitCheck can pick selfies from your library to build your avatar, and save your fit checks back to it.",
+        "NSPhotoLibraryAddUsageDescription": "FitCheck saves your fit check images to your photo library when you ask it to."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F6F4EF",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F6F4EF",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 96,
+          "dark": {
+            "backgroundColor": "#111110"
+          }
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "FitCheck uses your camera to take the selfies that build your avatar."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "FitCheck saves your fit check images to your photo library when you ask it to."
+        }
+      ],
+      "expo-sharing",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@fitcheck/tryon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Provider-agnostic try-on layer: Higgsfield Soul first, FASHN/Kling fallbacks, per-category routing, render caching, cost logging.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fitcheck/higgsfield": "*",
+    "zod": "^4.0.0"
+  }
+}
