@@ -8,12 +8,24 @@ import {
   getProductsByCategory,
   products,
 } from '../src/index';
-import { DRESS_IMAGE_KEYS, OUTERWEAR_IMAGE_KEYS } from '../src/featured';
+import {
+  BOTTOM_IMAGE_KEYS,
+  DRESS_IMAGE_KEYS,
+  OUTERWEAR_IMAGE_KEYS,
+  TOP_IMAGE_KEYS,
+} from '../src/featured';
 import { generateProducts } from '../src/generate';
 
+const KEYS_BY_CATEGORY = {
+  outerwear: new Set<string>(OUTERWEAR_IMAGE_KEYS),
+  dress: new Set<string>(DRESS_IMAGE_KEYS),
+  top: new Set<string>(TOP_IMAGE_KEYS),
+  bottom: new Set<string>(BOTTOM_IMAGE_KEYS),
+} as const;
+
 describe('@fitcheck/catalog', () => {
-  it('seeds at least 200 products', () => {
-    expect(products.length).toBeGreaterThanOrEqual(200);
+  it('seeds at least 300 products', () => {
+    expect(products.length).toBeGreaterThanOrEqual(300);
   });
 
   it('every product passes productSchema (zero feed errors)', () => {
@@ -29,66 +41,68 @@ describe('@fitcheck/catalog', () => {
     expect(ids.size).toBe(products.length);
   });
 
-  it('both categories have at least 80 items', () => {
-    expect(products.filter((p) => p.category === 'outerwear').length).toBeGreaterThanOrEqual(80);
-    expect(products.filter((p) => p.category === 'dress').length).toBeGreaterThanOrEqual(80);
-    expect(categories.map((c) => c.id).sort()).toEqual(['dress', 'outerwear']);
+  it('all four categories have at least 50 items', () => {
+    for (const category of ['outerwear', 'dress', 'top', 'bottom'] as const) {
+      expect(products.filter((p) => p.category === category).length).toBeGreaterThanOrEqual(50);
+    }
+    expect(categories.map((c) => c.id).sort()).toEqual(['bottom', 'dress', 'outerwear', 'top']);
   });
 
-  it('all 12 featured products use valid bundled image keys and are featured', () => {
+  it('all 48 featured products use valid bundled image keys and are featured', () => {
     const featured = getFeaturedProducts();
-    expect(featured).toHaveLength(12);
+    expect(featured).toHaveLength(48);
     for (const p of featured) {
       expect(p.featured).toBe(true);
       expect(p.imageKey).toBeDefined();
       expect(DEMO_IMAGE_KEYS).toContain(p.imageKey as string);
     }
-    // All 12 keys are covered, each exactly once.
-    expect(new Set(featured.map((p) => p.imageKey)).size).toBe(12);
-    expect(DEMO_IMAGE_KEYS).toHaveLength(12);
+    // All 48 keys are covered, each exactly once.
+    expect(new Set(featured.map((p) => p.imageKey)).size).toBe(48);
+    expect(DEMO_IMAGE_KEYS).toHaveLength(48);
   });
 
-  it('image keys stay within their category', () => {
-    const outerwearKeys = new Set<string>(OUTERWEAR_IMAGE_KEYS);
-    const dressKeys = new Set<string>(DRESS_IMAGE_KEYS);
+  it('image keys stay within their category across ALL items', () => {
     for (const p of products) {
       expect(p.imageKey).toBeDefined();
       const key = p.imageKey as string;
-      if (p.category === 'outerwear') {
-        expect(outerwearKeys.has(key)).toBe(true);
-        expect(dressKeys.has(key)).toBe(false);
-      } else {
-        expect(dressKeys.has(key)).toBe(true);
-        expect(outerwearKeys.has(key)).toBe(false);
+      expect(KEYS_BY_CATEGORY[p.category].has(key)).toBe(true);
+      for (const [category, keys] of Object.entries(KEYS_BY_CATEGORY)) {
+        if (category !== p.category) {
+          expect(keys.has(key)).toBe(false);
+        }
       }
     }
   });
 
   it('getProductsByCategory filters correctly and "all" returns everything', () => {
-    const outerwear = getProductsByCategory('outerwear');
-    const dress = getProductsByCategory('dress');
-    expect(outerwear.every((p) => p.category === 'outerwear')).toBe(true);
-    expect(dress.every((p) => p.category === 'dress')).toBe(true);
-    expect(outerwear.length + dress.length).toBe(products.length);
+    const byCategory = (['outerwear', 'dress', 'top', 'bottom'] as const).map((c) =>
+      getProductsByCategory(c),
+    );
+    for (const [i, category] of (['outerwear', 'dress', 'top', 'bottom'] as const).entries()) {
+      expect(byCategory[i]?.every((p) => p.category === category)).toBe(true);
+    }
+    expect(byCategory.reduce((sum, list) => sum + list.length, 0)).toBe(products.length);
     expect(getProductsByCategory('all')).toHaveLength(products.length);
   });
 
   it('getProductById finds seeded items and misses unknown ids', () => {
     expect(getProductById('fc-owr-001')?.title).toBe('Sand Belted Trench Coat');
     expect(getProductById('fc-drs-012')?.imageKey).toBe('p12-emerald-maxi');
+    expect(getProductById('fc-top-013')?.title).toBe('Crisp Poplin Button-Up');
+    expect(getProductById('fc-btm-036')?.imageKey).toBe('p36-plaid-mini');
     expect(getProductById('nope')).toBeUndefined();
   });
 
   it('featured products come first', () => {
-    expect(products.slice(0, 12).every((p) => p.featured === true)).toBe(true);
-    expect(products.slice(12).every((p) => p.featured !== true)).toBe(true);
+    expect(products.slice(0, 48).every((p) => p.featured === true)).toBe(true);
+    expect(products.slice(48).every((p) => p.featured !== true)).toBe(true);
   });
 
   it('generation is deterministic', () => {
     const a = generateProducts();
     const b = generateProducts();
     expect(a).toEqual(b);
-    expect(a).toHaveLength(204);
+    expect(a).toHaveLength(304);
     // Repeat imports resolve to the same validated array.
     expect(getProductsByCategory('all')).toEqual(getProductsByCategory('all'));
   });

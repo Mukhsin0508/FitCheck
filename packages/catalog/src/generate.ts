@@ -1,5 +1,5 @@
 import type { CatalogCategory, Product } from '@fitcheck/affiliates';
-import { DRESS_IMAGE_KEYS, OUTERWEAR_IMAGE_KEYS } from './featured';
+import { BOTTOM_IMAGE_KEYS, DRESS_IMAGE_KEYS, OUTERWEAR_IMAGE_KEYS, TOP_IMAGE_KEYS } from './featured';
 import { MERCHANTS, type MerchantMeta } from './merchants';
 
 // Deterministic by contract: index arithmetic only, no randomness.
@@ -29,16 +29,82 @@ interface CategoryMatrix {
 
 const OUTERWEAR: CategoryMatrix = {
   adjectives: ['Belted', 'Boxy Cropped', 'Oversized', 'Longline', 'Quilted', 'Double-Breasted', 'Relaxed', 'Tailored'],
-  nouns: ['Wool Trench', 'Leather Biker Jacket', 'Denim Jacket', 'Wool Overcoat', 'Puffer Jacket', 'Satin Bomber'],
+  nouns: [
+    'Wool Trench',
+    'Leather Biker Jacket',
+    'Denim Jacket',
+    'Wool Overcoat',
+    'Puffer Jacket',
+    'Satin Bomber',
+    'Wool Peacoat',
+    'Teddy Coat',
+    'Blazer',
+    'Raincoat',
+    'Suede Trucker Jacket',
+    'Wool Overshirt',
+  ],
   colors: ['Sand', 'Black', 'Camel', 'Olive', 'Stone Grey', 'Ecru', 'Espresso'],
   imageKeys: OUTERWEAR_IMAGE_KEYS,
 };
 
 const DRESS: CategoryMatrix = {
-  adjectives: ['Bias-Cut', 'Ribbed', 'Wrap-Front', 'Structured', 'Tiered', 'Cowl-Neck', 'Smocked', 'Draped'],
-  nouns: ['Satin Slip Dress', 'Knit Midi Dress', 'Floral Midi Dress', 'Mini Dress', 'Shirt Dress', 'Maxi Dress'],
+  adjectives: ['Bias-Cut', 'Ribbed', 'Wrap-Front', 'Structured', 'A-Line', 'Cowl-Neck', 'Smocked', 'Draped'],
+  nouns: [
+    'Satin Slip Dress',
+    'Knit Midi Dress',
+    'Floral Midi Dress',
+    'Mini Dress',
+    'Shirt Dress',
+    'Maxi Dress',
+    'Slip Midi Dress',
+    'Broderie Sundress',
+    'Tea Dress',
+    'Knit Maxi Dress',
+    'Sequin Mini Dress',
+    'Tiered Midi Dress',
+  ],
   colors: ['Champagne', 'Charcoal', 'Scarlet', 'Black', 'Ivory', 'Emerald', 'Dusty Rose'],
   imageKeys: DRESS_IMAGE_KEYS,
+};
+
+const TOP: CategoryMatrix = {
+  adjectives: ['Crisp', 'Relaxed', 'Boxy', 'Fitted', 'Oversized', 'Cropped', 'Classic', 'Slouchy'],
+  nouns: [
+    'Poplin Button-Up',
+    'Silk Blouse',
+    'Breton Tee',
+    'Cashmere Crewneck',
+    'Cable-Knit Sweater',
+    'Turtleneck Top',
+    'Satin Camisole',
+    'Heavyweight Tee',
+    'Fine-Knit Cardigan',
+    'Mohair Sweater',
+    'Chambray Shirt',
+    'Corset Top',
+  ],
+  colors: ['White', 'Black', 'Ivory', 'Grey Marl', 'Navy', 'Cream', 'Rust'],
+  imageKeys: TOP_IMAGE_KEYS,
+};
+
+const BOTTOM: CategoryMatrix = {
+  adjectives: ['High-Rise', 'Relaxed', 'Stretch', 'Cropped', 'Washed', 'Slim', 'Structured', 'Raw-Hem'],
+  nouns: [
+    'Straight-Leg Jeans',
+    'Tailored Trousers',
+    'Wide-Leg Trousers',
+    'Pleated Midi Skirt',
+    'Leather Midi Skirt',
+    'Linen Trousers',
+    'Flared Jeans',
+    'Cargo Pants',
+    'Bias Maxi Skirt',
+    'Pencil Skirt',
+    'Knit Joggers',
+    'Wool Mini Skirt',
+  ],
+  colors: ['Indigo', 'Black', 'Beige', 'Grey', 'Chocolate', 'White', 'Khaki'],
+  imageKeys: BOTTOM_IMAGE_KEYS,
 };
 
 function slugify(title: string): string {
@@ -96,16 +162,33 @@ function generateItem(
   };
 }
 
-const GENERATED_PER_CATEGORY = 102;
+interface GenerationRun {
+  category: CatalogCategory;
+  matrix: CategoryMatrix;
+  idPrefix: string;
+  /** Generated ids start at 101 so they never collide with featured 001–048. */
+  idStart: number;
+  merchantOffset: number;
+  count: number;
+}
 
-/** 204 deterministic catalog items: 102 outerwear (fc-owr-013…) + 102 dress (fc-drs-113…). */
+const RUNS: readonly GenerationRun[] = [
+  { category: 'outerwear', matrix: OUTERWEAR, idPrefix: 'fc-owr-', idStart: 101, merchantOffset: 0, count: 102 },
+  { category: 'dress', matrix: DRESS, idPrefix: 'fc-drs-', idStart: 101, merchantOffset: 3, count: 102 },
+  { category: 'top', matrix: TOP, idPrefix: 'fc-top-', idStart: 101, merchantOffset: 1, count: 50 },
+  { category: 'bottom', matrix: BOTTOM, idPrefix: 'fc-btm-', idStart: 101, merchantOffset: 4, count: 50 },
+];
+
+/**
+ * 304 deterministic catalog items: 102 outerwear (fc-owr-101…) + 102 dress
+ * (fc-drs-101…) + 50 top (fc-top-101…) + 50 bottom (fc-btm-101…).
+ */
 export function generateProducts(): Product[] {
   const items: Product[] = [];
-  for (let i = 0; i < GENERATED_PER_CATEGORY; i++) {
-    items.push(generateItem('outerwear', OUTERWEAR, 'fc-owr-', 13, 0, i));
-  }
-  for (let i = 0; i < GENERATED_PER_CATEGORY; i++) {
-    items.push(generateItem('dress', DRESS, 'fc-drs-', 113, 3, i));
+  for (const run of RUNS) {
+    for (let i = 0; i < run.count; i++) {
+      items.push(generateItem(run.category, run.matrix, run.idPrefix, run.idStart, run.merchantOffset, i));
+    }
   }
   return items;
 }

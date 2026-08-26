@@ -17,6 +17,8 @@ export const products: Product[] = feed.products;
 export const categories: { id: CatalogCategory; label: string }[] = [
   { id: 'outerwear', label: 'Outerwear' },
   { id: 'dress', label: 'Dresses' },
+  { id: 'top', label: 'Tops' },
+  { id: 'bottom', label: 'Bottoms' },
 ];
 
 export function getProductById(id: string): Product | undefined {

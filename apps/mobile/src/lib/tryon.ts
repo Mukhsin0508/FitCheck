@@ -33,8 +33,13 @@ const FIT_BY_IMAGE_KEY: Record<string, string> = {
   'p10-black-mini': 'fit-mini',
 };
 
-const OUTERWEAR_FITS = ['fit-trench', 'fit-leather', 'fit-denim'] as const;
-const DRESS_FITS = ['fit-slip', 'fit-knit', 'fit-mini'] as const;
+const FIT_POOLS: Record<string, readonly string[]> = {
+  outerwear: ['fit-trench', 'fit-leather', 'fit-denim'],
+  dress: ['fit-slip', 'fit-knit', 'fit-mini'],
+  top: ['fit-shirt'],
+  bottom: ['fit-trousers'],
+};
+const DEFAULT_POOL = FIT_POOLS['outerwear']!;
 
 function stableIndex(seed: string, length: number): number {
   let hash = 5381;
@@ -47,10 +52,8 @@ function resolveDemoFit(request: TryOnRequest): string {
   const mapped = product?.imageKey ? FIT_BY_IMAGE_KEY[product.imageKey] : undefined;
   if (mapped) return assetRef(mapped);
 
-  const pool =
-    request.garment.category === 'dress' || product?.category === 'dress'
-      ? DRESS_FITS
-      : OUTERWEAR_FITS;
+  const category = product?.category ?? request.garment.category;
+  const pool = FIT_POOLS[category] ?? DEFAULT_POOL;
   const seed = request.garment.productId ?? request.garment.imageUrl;
   const pick = pool[stableIndex(seed, pool.length)] ?? pool[0]!;
   return assetRef(pick);
@@ -108,7 +111,8 @@ export function requestForProduct(productId: string): TryOnRequest {
     },
     garment: {
       imageUrl: product.imageKey ? assetRef(product.imageKey) : (product.imageUrl ?? ''),
-      category: product.category === 'dress' ? 'dress' : 'outerwear',
+      // CatalogCategory ('outerwear'|'dress'|'top'|'bottom') is a subset of GarmentCategory.
+      category: product.category,
       productId: product.id,
     },
     userId,

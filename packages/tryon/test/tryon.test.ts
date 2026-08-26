@@ -211,7 +211,9 @@ describe('TryOnService caching + cost log', () => {
     const costs: CostRecord[] = [];
     const service = new TryOnService({ providers: [provider], onCost: (r) => costs.push(r) });
 
-    const render = await service.tryOn(makeRequest());
+    const render = await service.tryOn(
+      makeRequest({ person: { imageUrl: 'https://cdn.example.com/me.jpg', avatarVersion: 1 } }),
+    );
     expect(render.costUsd).toBe(0.09);
     expect(costs[0]).toMatchObject({ provider: 'higgsfield', costUsd: 0.09, cached: false });
   });
@@ -224,7 +226,9 @@ describe('HiggsfieldTryOnProvider', () => {
     expect(provider.supports('dress')).toBe(true);
     expect(provider.costPerRenderUsd).toBe(0.09);
 
-    const out = await provider.render(makeRequest());
+    const out = await provider.render(
+      makeRequest({ person: { imageUrl: 'https://cdn.example.com/me.jpg', avatarVersion: 1 } }),
+    );
     expect(out.imageUrl).toMatch(/^https:\/\/mock\.higgsfield\.local\/renders\//);
     expect(out.durationMs).toBeGreaterThanOrEqual(0);
   });

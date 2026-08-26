@@ -41,9 +41,10 @@ export class HiggsfieldTryOnProvider implements TryOnProvider {
 
     const result = await this.client.tryon.renderAndWait(
       {
-        // soulId is preferred; personImage is only sent when there is no Soul
+        // The public try-on path (Popcorn) needs the person as an image URL;
+        // soulId rides along for endpoints that accept an avatar id.
         soulId,
-        personImage: soulId ? undefined : imageUrl,
+        personImage: imageUrl,
         garmentImage: request.garment.imageUrl,
         category: request.garment.category,
         signal: options?.signal,

@@ -12,7 +12,7 @@ import { z } from 'zod';
 export type AffiliateNetworkId = 'awin' | 'rakuten' | 'cj' | 'partnerize' | 'direct';
 
 /** Browse categories in v1. Maps 1:1 onto try-on garment categories. */
-export type CatalogCategory = 'outerwear' | 'dress';
+export type CatalogCategory = 'outerwear' | 'dress' | 'top' | 'bottom';
 
 export interface AffiliateProgram {
   /** Stable slug, e.g. 'shein', 'hm', 'farfetch', 'asos'. */
@@ -90,7 +90,7 @@ export const productSchema = z.object({
   brand: z.string().min(1),
   programId: z.string().min(1),
   network: z.enum(['awin', 'rakuten', 'cj', 'partnerize', 'direct']),
-  category: z.enum(['outerwear', 'dress']),
+  category: z.enum(['outerwear', 'dress', 'top', 'bottom']),
   priceCents: z.number().int().nonnegative(),
   currency: z.string().length(3),
   productUrl: z
