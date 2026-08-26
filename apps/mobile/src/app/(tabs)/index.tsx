@@ -1,7 +1,7 @@
 import type { Product } from '@fitcheck/affiliates';
 import { categories, getProductsByCategory } from '@fitcheck/catalog';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -20,7 +20,27 @@ export default function BrowseScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const listRef = useRef<FlatList<Product>>(null);
+  const chipsRef = useRef<ScrollView>(null);
   const [category, setCategory] = useState<CategoryId>('all');
+
+  // Web: the chip row hides its scrollbar, and browsers don't scroll an
+  // overflow-x row on a plain vertical wheel — map the wheel to it so mice
+  // can reach every category. Trackpads already pan it natively.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const node = (
+      chipsRef.current as unknown as { getScrollableNode?: () => HTMLElement } | null
+    )?.getScrollableNode?.();
+    if (!node) return;
+    const onWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        node.scrollLeft += event.deltaY;
+        event.preventDefault();
+      }
+    };
+    node.addEventListener('wheel', onWheel, { passive: false });
+    return () => node.removeEventListener('wheel', onWheel);
+  }, []);
 
   // Static catalog — counts never change while the screen is mounted.
   const counts = useMemo<Record<CategoryId, number>>(() => {
@@ -59,53 +79,27 @@ export default function BrowseScreen() {
           onPress={() => router.push('/paste-url')}
         />
       </View>
-      {/* Mice can't drag a hidden-scrollbar row, so the web build wraps the
-          chips instead of scrolling them. */}
-      {Platform.OS === 'web' ? (
-        <View
-          style={{
-            marginTop: spacing.l,
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: spacing.s,
-          }}
-        >
+      <ScrollView
+        ref={chipsRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginTop: spacing.l, marginHorizontal: -spacing.l }}
+        contentContainerStyle={{ paddingHorizontal: spacing.l, gap: spacing.s }}
+      >
+        <Chip
+          label={`All · ${counts.all}`}
+          selected={category === 'all'}
+          onPress={() => selectCategory('all')}
+        />
+        {categories.map((cat) => (
           <Chip
-            label={`All · ${counts.all}`}
-            selected={category === 'all'}
-            onPress={() => selectCategory('all')}
+            key={cat.id}
+            label={`${cat.label} · ${counts[cat.id]}`}
+            selected={category === cat.id}
+            onPress={() => selectCategory(cat.id)}
           />
-          {categories.map((cat) => (
-            <Chip
-              key={cat.id}
-              label={`${cat.label} · ${counts[cat.id]}`}
-              selected={category === cat.id}
-              onPress={() => selectCategory(cat.id)}
-            />
-          ))}
-        </View>
-      ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ marginTop: spacing.l, marginHorizontal: -spacing.l }}
-          contentContainerStyle={{ paddingHorizontal: spacing.l, gap: spacing.s }}
-        >
-          <Chip
-            label={`All · ${counts.all}`}
-            selected={category === 'all'}
-            onPress={() => selectCategory('all')}
-          />
-          {categories.map((cat) => (
-            <Chip
-              key={cat.id}
-              label={`${cat.label} · ${counts[cat.id]}`}
-              selected={category === cat.id}
-              onPress={() => selectCategory(cat.id)}
-            />
-          ))}
-        </ScrollView>
-      )}
+        ))}
+      </ScrollView>
       <AppText variant="micro" muted style={{ marginTop: spacing.m }}>
         {data.length} {data.length === 1 ? 'piece' : 'pieces'} · rendered on your avatar
       </AppText>
