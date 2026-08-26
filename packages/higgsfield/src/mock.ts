@@ -107,7 +107,7 @@ export class MockTransport implements Transport {
       });
     }
 
-    if (req.method === 'POST' && pathname === '/uploads') {
+    if (req.method === 'POST' && pathname === '/files/generate-upload-url') {
       const id = nextId('upload');
       return ok({
         public_url: `https://mock.higgsfield.local/uploads/${id}`,

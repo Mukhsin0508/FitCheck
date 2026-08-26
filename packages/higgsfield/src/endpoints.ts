@@ -33,8 +33,12 @@ export const ENDPOINTS = {
   requestStatus: '/requests/:id/status',
   /** Cancel a queued generation request (running ones cannot be canceled). */
   requestCancel: '/requests/:id/cancel',
-  /** POST {content_type} → {public_url, upload_url, upload_headers}; PUT bytes to upload_url. */
-  uploads: '/uploads',
+  /**
+   * POST {content_type} → {public_url, upload_url, upload_headers}; PUT the
+   * bytes to upload_url with ONLY upload_headers (never API credentials).
+   * Documented at docs.higgsfield.ai/docs/concepts/file-uploads.
+   */
+  uploads: '/files/generate-upload-url',
 } as const;
 
 export type EndpointName = keyof typeof ENDPOINTS;
