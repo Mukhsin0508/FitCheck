@@ -11,7 +11,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Linking, Platform, View } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
@@ -31,6 +31,43 @@ const PROMPTS = [
   'And the right',
   'One full-body, arms relaxed',
 ] as const;
+
+/** Corner-guide geometry: thin ink Ls framing where the face goes. */
+const GUIDE_LENGTH = 28;
+const GUIDE_WEIGHT = 2;
+const GUIDE_INSET = 24;
+
+/**
+ * Four L-shaped corner guides drawn over the live camera feed. Quiet by
+ * design — 2pt strokes in the strong hairline token (~30% ink) so they frame
+ * without competing with the face.
+ */
+function CornerGuides({ color }: { color: string }) {
+  const corners = [
+    { top: GUIDE_INSET, left: GUIDE_INSET, borderTopWidth: GUIDE_WEIGHT, borderLeftWidth: GUIDE_WEIGHT },
+    { top: GUIDE_INSET, right: GUIDE_INSET, borderTopWidth: GUIDE_WEIGHT, borderRightWidth: GUIDE_WEIGHT },
+    { bottom: GUIDE_INSET, left: GUIDE_INSET, borderBottomWidth: GUIDE_WEIGHT, borderLeftWidth: GUIDE_WEIGHT },
+    { bottom: GUIDE_INSET, right: GUIDE_INSET, borderBottomWidth: GUIDE_WEIGHT, borderRightWidth: GUIDE_WEIGHT },
+  ] as const;
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {corners.map((corner, index) => (
+        <View
+          key={index}
+          style={[
+            {
+              position: 'absolute',
+              width: GUIDE_LENGTH,
+              height: GUIDE_LENGTH,
+              borderColor: color,
+            },
+            corner,
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
 
 export default function OnboardingSelfies() {
   const router = useRouter();
@@ -127,7 +164,7 @@ export default function OnboardingSelfies() {
       <AppText variant="micro" muted>
         Step {Math.min(uris.length + 1, TOTAL)} of {TOTAL}
       </AppText>
-      <Animated.View key={step} entering={FadeIn.duration(250)}>
+      <Animated.View key={done ? 'done' : step} entering={FadeIn.duration(250)}>
         <AppText variant="title" style={{ marginTop: spacing.xs }}>
           {done ? 'Got it. Building…' : prompt}
         </AppText>
@@ -165,7 +202,10 @@ export default function OnboardingSelfies() {
           }}
         >
           {cameraAllowed ? (
-            <CameraView ref={cameraRef} facing={facing} style={{ flex: 1 }} />
+            <>
+              <CameraView ref={cameraRef} facing={facing} style={{ flex: 1 }} />
+              <CornerGuides color={colors.borderStrong} />
+            </>
           ) : (
             <View
               style={{

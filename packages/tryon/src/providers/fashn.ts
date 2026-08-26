@@ -5,6 +5,7 @@
  */
 
 import { z } from 'zod';
+import { abortError } from '../abort';
 import type {
   GarmentCategory,
   ProviderRenderOutput,
@@ -126,7 +127,7 @@ export class FashnProvider implements TryOnProvider {
 }
 
 async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  signal?.throwIfAborted();
+  if (signal?.aborted) throw abortError();
   if (ms <= 0) return;
   await new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => {

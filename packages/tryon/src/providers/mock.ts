@@ -1,3 +1,4 @@
+import { abortableDelay, throwIfAborted } from '../abort';
 import type {
   GarmentCategory,
   ProviderRenderOutput,
@@ -29,14 +30,14 @@ export class MockTryOnProvider implements TryOnProvider {
     request: TryOnRequest,
     options?: { signal?: AbortSignal },
   ): Promise<ProviderRenderOutput> {
-    options?.signal?.throwIfAborted();
+    throwIfAborted(options?.signal);
     const startedAt = Date.now();
     if (this.options.failFor?.(request)) {
       throw new Error('MockTryOnProvider: simulated failure');
     }
     const delayMs = this.options.delayMs ?? 0;
     if (delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      await abortableDelay(delayMs, options?.signal);
     }
     const imageUrl = this.options.resolveImage(request) ?? this.options.fallbackImage;
     if (!imageUrl) {

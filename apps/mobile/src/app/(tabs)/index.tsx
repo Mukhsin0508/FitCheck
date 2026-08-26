@@ -22,6 +22,13 @@ export default function BrowseScreen() {
   const listRef = useRef<FlatList<Product>>(null);
   const [category, setCategory] = useState<CategoryId>('all');
 
+  // Static catalog — counts never change while the screen is mounted.
+  const counts = useMemo<Record<CategoryId, number>>(() => {
+    const next = { all: getProductsByCategory('all').length } as Record<CategoryId, number>;
+    for (const cat of categories) next[cat.id] = getProductsByCategory(cat.id).length;
+    return next;
+  }, []);
+
   const data = useMemo(() => getProductsByCategory(category), [category]);
 
   const selectCategory = useCallback((next: CategoryId) => {
@@ -48,28 +55,33 @@ export default function BrowseScreen() {
           label="Paste a link"
           variant="ghost"
           size="s"
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           onPress={() => router.push('/paste-url')}
         />
       </View>
-      <AppText variant="caption" muted style={{ marginTop: spacing.xs }}>
-        Every piece renders on your avatar.
-      </AppText>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: spacing.s }}
-        style={{ marginTop: spacing.l }}
+        style={{ marginTop: spacing.l, marginHorizontal: -spacing.l }}
+        contentContainerStyle={{ paddingHorizontal: spacing.l, gap: spacing.s }}
       >
-        <Chip label="All" selected={category === 'all'} onPress={() => selectCategory('all')} />
+        <Chip
+          label={`All · ${counts.all}`}
+          selected={category === 'all'}
+          onPress={() => selectCategory('all')}
+        />
         {categories.map((cat) => (
           <Chip
             key={cat.id}
-            label={cat.label}
+            label={`${cat.label} · ${counts[cat.id]}`}
             selected={category === cat.id}
             onPress={() => selectCategory(cat.id)}
           />
         ))}
       </ScrollView>
+      <AppText variant="micro" muted style={{ marginTop: spacing.m }}>
+        {data.length} {data.length === 1 ? 'piece' : 'pieces'} · rendered on your avatar
+      </AppText>
     </Animated.View>
   );
 

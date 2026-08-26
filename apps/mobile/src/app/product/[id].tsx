@@ -1,13 +1,22 @@
 import { getProductById } from '@fitcheck/catalog';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  Extrapolation,
+  FadeInDown,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { EmptyState } from '@/components/EmptyState';
 import { PressableScale } from '@/components/PressableScale';
@@ -21,8 +30,9 @@ import { radius, spacing, useTheme } from '@/theme';
 export default function ProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
 
   const product = getProductById(typeof id === 'string' ? id : '');
   const renders = useStore((state) => state.renders);
@@ -30,6 +40,27 @@ export default function ProductScreen() {
     () => Object.values(renders).find((render) => render.productId === product?.id),
     [renders, product?.id],
   );
+
+  // Visual-only size selection; availability still comes from the merchant.
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
+  // Pull-down parallax: within the pull range the hero scales 1 -> 1.08
+  // while translating by half the pull, which keeps its top edge pinned
+  // (a top-anchored stretch) with no seam against the content below.
+  const heroHeight = (width * 4) / 3;
+  const pullRange = heroHeight * 0.08;
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+  const heroStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(scrollY.value, [-pullRange, 0], [-pullRange / 2, 0], Extrapolation.CLAMP),
+      },
+      { scale: interpolate(scrollY.value, [-pullRange, 0], [1.08, 1], Extrapolation.CLAMP) },
+    ],
+  }));
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
@@ -56,14 +87,22 @@ export default function ProductScreen() {
   const onBuy = () => {
     openBuyLink(product, cachedRender?.id).catch(() => {});
   };
+  const blurTint = scheme === 'dark' ? 'dark' : 'light';
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 200 }}
       >
-        <View style={{ width: '100%', aspectRatio: 3 / 4, backgroundColor: colors.surfaceAlt }}>
+        <Animated.View
+          style={[
+            { width: '100%', height: heroHeight, backgroundColor: colors.surfaceAlt },
+            heroStyle,
+          ]}
+        >
           <Image
             source={productImageSource(product)}
             contentFit="cover"
@@ -71,7 +110,7 @@ export default function ProductScreen() {
             style={{ width: '100%', height: '100%' }}
             accessibilityLabel={`${product.brand} ${product.title}`}
           />
-        </View>
+        </Animated.View>
 
         <Animated.View
           entering={FadeInDown.duration(300)}
@@ -84,13 +123,31 @@ export default function ProductScreen() {
             <AppText variant="title">{product.title}</AppText>
           </View>
 
-          <View style={{ gap: spacing.xs }}>
-            <AppText variant="heading">{formatPrice(product.priceCents, product.currency)}</AppText>
-            <AppText variant="caption" muted>
+          <AppText variant="heading">{formatPrice(product.priceCents, product.currency)}</AppText>
+
+          <Card
+            padded={false}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.s,
+              paddingHorizontal: spacing.m,
+              paddingVertical: spacing.m,
+            }}
+          >
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: radius.pill,
+                backgroundColor: colors.accent,
+              }}
+            />
+            <AppText variant="caption" muted style={{ flex: 1 }}>
               {merchant} pays us ~{Math.round(product.commissionPct)}% if you buy. Your price
               doesn't change.
             </AppText>
-          </View>
+          </Card>
 
           {product.colors && product.colors.length > 0 ? (
             <View style={{ gap: spacing.s, marginTop: spacing.s }}>
@@ -112,9 +169,19 @@ export default function ProductScreen() {
               </AppText>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s }}>
                 {product.sizes.map((size) => (
-                  <Chip key={size} label={size} />
+                  <Chip
+                    key={size}
+                    label={size}
+                    selected={selectedSize === size}
+                    onPress={() =>
+                      setSelectedSize((current) => (current === size ? null : size))
+                    }
+                  />
                 ))}
               </View>
+              <AppText variant="micro" muted>
+                sizes from the merchant feed
+              </AppText>
             </View>
           ) : null}
 
@@ -127,7 +194,7 @@ export default function ProductScreen() {
             </AppText>
           </View>
         </Animated.View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <PressableScale
         accessibilityRole="button"
@@ -137,19 +204,23 @@ export default function ProductScreen() {
           position: 'absolute',
           top: insets.top + spacing.s,
           left: spacing.l,
-          width: 40,
-          height: 40,
+          width: 44,
+          height: 44,
           borderRadius: radius.pill,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: `${colors.bg}E6`,
+          overflow: 'hidden',
+          backgroundColor: `${colors.bg}99`,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
         }}
       >
-        <AppText variant="body" style={{ fontWeight: '600' }}>
-          ←
-        </AppText>
+        <BlurView tint={blurTint} intensity={30} style={StyleSheet.absoluteFill} />
+        <View
+          style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}
+        >
+          <AppText style={{ fontSize: 26, lineHeight: 30, marginTop: -2, marginLeft: -1 }}>
+            ‹
+          </AppText>
+        </View>
       </PressableScale>
 
       <View
@@ -158,52 +229,63 @@ export default function ProductScreen() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: colors.bg,
+          backgroundColor: `${colors.bg}B3`,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
-          paddingHorizontal: spacing.l,
-          paddingTop: spacing.m,
-          paddingBottom: Math.max(insets.bottom, spacing.m),
         }}
       >
-        {cachedRender ? (
-          <PressableScale
-            accessibilityRole="button"
-            accessibilityLabel="Already on you — see it"
-            onPress={goTryOn}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.m,
-              backgroundColor: colors.surfaceAlt,
-              borderRadius: radius.m,
-              padding: spacing.s,
-              marginBottom: spacing.m,
-            }}
-          >
-            <Image
-              source={resolveImageRef(cachedRender.imageUrl)}
-              contentFit="cover"
-              transition={200}
-              style={{ width: 36, height: 48, borderRadius: radius.s }}
+        <BlurView tint={blurTint} intensity={40} style={StyleSheet.absoluteFill} />
+        <View
+          style={{
+            paddingHorizontal: spacing.l,
+            paddingTop: spacing.m,
+            paddingBottom: Math.max(insets.bottom, spacing.m),
+          }}
+        >
+          {cachedRender ? (
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel="Already on you — see it"
+              onPress={goTryOn}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.m,
+                backgroundColor: colors.surfaceAlt,
+                borderRadius: radius.m,
+                padding: spacing.s,
+                marginBottom: spacing.m,
+              }}
+            >
+              <Image
+                source={resolveImageRef(cachedRender.imageUrl)}
+                contentFit="cover"
+                transition={200}
+                style={{
+                  width: 36,
+                  height: 48,
+                  borderRadius: radius.s,
+                  backgroundColor: colors.surfaceAlt,
+                }}
+              />
+              <AppText variant="caption" style={{ fontWeight: '600', flex: 1 }}>
+                Already on you — see it
+              </AppText>
+              <AppText variant="caption" muted>
+                →
+              </AppText>
+            </PressableScale>
+          ) : null}
+          <View style={{ flexDirection: 'row', gap: spacing.m }}>
+            <Button
+              label="Try it on me"
+              variant="primary"
+              size="m"
+              onPress={goTryOn}
+              style={{ flex: 1 }}
             />
-            <AppText variant="caption" style={{ fontWeight: '600', flex: 1 }}>
-              Already on you — see it
-            </AppText>
-            <AppText variant="caption" muted>
-              →
-            </AppText>
-          </PressableScale>
-        ) : null}
-        <View style={{ flexDirection: 'row', gap: spacing.m }}>
-          <Button
-            label="Try it on me"
-            variant="primary"
-            size="m"
-            onPress={goTryOn}
-            style={{ flex: 1 }}
-          />
-          <Button label={`Buy at ${merchant}`} variant="ghost" size="m" onPress={onBuy} />
+            <Button label={`Buy at ${merchant}`} variant="ghost" size="m" onPress={onBuy} />
+          </View>
         </View>
       </View>
     </View>

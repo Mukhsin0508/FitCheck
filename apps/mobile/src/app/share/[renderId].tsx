@@ -80,6 +80,9 @@ export default function ShareScreen() {
 
   function switchLayout(next: FitCardLayout) {
     if (next === layout) return;
+    if (Platform.OS !== 'web') {
+      Haptics.selectionAsync().catch(() => {});
+    }
     setLayout(next);
     // The new card hasn't been saved yet — re-enable "Save to photos".
     setSaved(false);

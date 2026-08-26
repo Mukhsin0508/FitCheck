@@ -1,11 +1,17 @@
 import { Redirect, Tabs } from 'expo-router';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { useStore } from '@/state/store';
-import { spacing, useTheme } from '@/theme';
+import { radius, spacing, useTheme } from '@/theme';
 
 const LABELS: Record<string, string> = {
   index: 'Browse',
@@ -20,6 +26,31 @@ interface TabBarProps {
   navigation: { navigate: (name: string) => void };
 }
 
+/** The lime tick under the active label — springs open on focus, folds away off it. */
+function TabTick({ focused }: { focused: boolean }) {
+  const { colors } = useTheme();
+  const progress = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    progress.value = withSpring(focused ? 1 : 0, { damping: 18, stiffness: 220 });
+  }, [focused, progress]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    // 4pt at rest, 16pt when focused.
+    width: 4 + progress.value * 12,
+    opacity: progress.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        { height: 3, borderRadius: radius.pill, backgroundColor: colors.accent },
+        animatedStyle,
+      ]}
+    />
+  );
+}
+
 /** Editorial text-only tab bar: no icons, small caps, a lime tick for the active tab. */
 function EditorialTabBar({ state, navigation }: TabBarProps) {
   const { colors } = useTheme();
@@ -32,6 +63,11 @@ function EditorialTabBar({ state, navigation }: TabBarProps) {
         backgroundColor: colors.bg,
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: colors.border,
+        // A whisper of lift off the content — the hairline still does the work.
+        shadowColor: colors.ink,
+        shadowOpacity: 0.06,
+        shadowOffset: { width: 0, height: -4 },
+        shadowRadius: 12,
       }}
     >
       {state.routes.map((route, index) => {
@@ -63,14 +99,7 @@ function EditorialTabBar({ state, navigation }: TabBarProps) {
             >
               {label}
             </AppText>
-            <View
-              style={{
-                width: 16,
-                height: 3,
-                borderRadius: 2,
-                backgroundColor: focused ? colors.accent : 'transparent',
-              }}
-            />
+            <TabTick focused={focused} />
           </PressableScale>
         );
       })}

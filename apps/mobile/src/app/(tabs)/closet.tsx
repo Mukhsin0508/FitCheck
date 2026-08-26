@@ -16,10 +16,11 @@ import { Screen } from '@/components/Screen';
 import { SectionHeader } from '@/components/SectionHeader';
 import { resolveImageRef } from '@/lib/images';
 import { useStore, type ClosetItem } from '@/state/store';
-import { radius, spacing } from '@/theme';
+import { radius, spacing, useTheme } from '@/theme';
 
 export default function ClosetScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const closet = useStore((s) => s.closet);
   const removeFromCloset = useStore((s) => s.removeFromCloset);
 
@@ -75,7 +76,18 @@ export default function ClosetScreen() {
           paddingBottom: spacing.xxl,
           gap: spacing.l,
         }}
-        ListHeaderComponent={<SectionHeader overline="Your fits" title="Closet" />}
+        ListHeaderComponent={
+          <View>
+            <SectionHeader overline="Your fits" title="Closet" />
+            <AppText
+              variant="micro"
+              muted
+              style={{ textTransform: 'none', letterSpacing: 0.3, marginTop: -spacing.s }}
+            >
+              Hold a fit to take it out.
+            </AppText>
+          </View>
+        }
         ListFooterComponent={
           <AppText variant="caption" muted align="center" style={{ paddingTop: spacing.s }}>
             {closet.length === 1 ? '1 fit saved' : `${closet.length} fits saved`}
@@ -83,7 +95,7 @@ export default function ClosetScreen() {
         }
         renderItem={({ item, index }) => (
           <Animated.View
-            entering={FadeInDown.duration(300).delay(Math.min(index, 6) * 40)}
+            entering={FadeInDown.duration(300).delay(Math.min(index * 40, 400))}
             style={{ flex: 1 }}
           >
             <PressableScale
@@ -99,7 +111,13 @@ export default function ClosetScreen() {
                 recyclingKey={item.renderId}
                 contentFit="cover"
                 transition={200}
-                style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: radius.l }}
+                style={{
+                  width: '100%',
+                  aspectRatio: 3 / 4,
+                  borderRadius: radius.l,
+                  // Quiet placeholder while the saved render loads.
+                  backgroundColor: colors.surfaceAlt,
+                }}
                 accessibilityLabel={item.title}
               />
               <View style={{ gap: 2, paddingHorizontal: spacing.xs }}>

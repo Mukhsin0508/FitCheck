@@ -11,7 +11,12 @@ export interface HiggsfieldTryOnProviderOptions {
   poll?: PollOptions;
 }
 
-/** Primary provider: Higgsfield Soul outfit-swap. */
+/**
+ * Primary provider: Higgsfield try-on (platform API, @higgsfield/client v2
+ * wire protocol). `renderAndWait` submits POST /{endpointSlug} and polls
+ * GET /requests/{id}/status; the returned image URLs are pre-signed CDN links
+ * that expire (~7 days) — persist them promptly if kept beyond the session.
+ */
 export class HiggsfieldTryOnProvider implements TryOnProvider {
   readonly name = 'higgsfield' as const;
   readonly costPerRenderUsd = 0.09;

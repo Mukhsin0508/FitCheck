@@ -5,15 +5,15 @@
 
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
-import { useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import { useState, type PropsWithChildren } from 'react';
+import { Alert, Platform, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { PressableScale } from '@/components/PressableScale';
 import { Screen } from '@/components/Screen';
-import { SectionHeader } from '@/components/SectionHeader';
 import { demoImages } from '@/lib/images';
 import { selectRenderCount, selectTotalSpendUsd, useStore } from '@/state/store';
 import { radius, spacing, useTheme } from '@/theme';
@@ -40,18 +40,45 @@ function confirmDestructive(
 function StatCard({ value, label, footnote }: { value: string; label: string; footnote?: string }) {
   return (
     <Card style={{ flex: 1 }}>
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="heading">{value}</AppText>
-        <AppText variant="micro" muted>
+      <View style={{ alignItems: 'center', gap: spacing.xs }}>
+        <AppText variant="title" align="center">
+          {value}
+        </AppText>
+        <AppText variant="micro" muted align="center">
           {label}
         </AppText>
         {footnote ? (
-          <AppText muted style={{ fontSize: 10, lineHeight: 13 }}>
+          <AppText muted align="center" style={{ fontSize: 10, lineHeight: 13 }}>
             {footnote}
           </AppText>
         ) : null}
       </View>
     </Card>
+  );
+}
+
+/** Settings section: hairline divider on top, micro overline, then content. */
+function Section({
+  overline,
+  delay,
+  children,
+}: PropsWithChildren<{ overline: string; delay: number }>) {
+  const { colors } = useTheme();
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(300).delay(delay)}
+      style={{
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: colors.border,
+        paddingTop: spacing.l,
+        gap: spacing.m,
+      }}
+    >
+      <AppText variant="micro" muted>
+        {overline}
+      </AppText>
+      {children}
+    </Animated.View>
   );
 }
 
@@ -150,37 +177,43 @@ export default function ProfileScreen() {
         <StatCard value={usd.format(spendUsd)} label="render spend" footnote="our cost, not yours" />
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.duration(300).delay(120)} style={{ gap: spacing.m }}>
-        <SectionHeader title="Avatar" />
+      <Section overline="Avatar" delay={120}>
         <AppText muted>
           Not feeling the likeness? Retake your selfies and we'll rebuild you from scratch.
         </AppText>
         <Button label="Redo my avatar" variant="ghost" size="m" onPress={handleRedoAvatar} />
-      </Animated.View>
+      </Section>
 
-      <Animated.View entering={FadeInDown.duration(300).delay(180)} style={{ gap: spacing.m }}>
-        <SectionHeader title="Privacy" />
+      <Section overline="Privacy" delay={180}>
         <AppText muted>
           Your selfies stay on this phone — this build never uploads them. Delete below and
           they're gone, along with your renders, closet, and try-on history.
         </AppText>
-        <Button
-          label="Delete everything on this phone"
-          variant="ghost"
-          size="m"
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Delete everything on this phone"
           onPress={handleDeleteEverything}
-        />
-      </Animated.View>
+          style={{
+            minHeight: 48,
+            alignSelf: 'stretch',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <AppText color={colors.danger} style={{ fontWeight: '600' }}>
+            Delete everything on this phone
+          </AppText>
+        </PressableScale>
+      </Section>
 
-      <Animated.View entering={FadeInDown.duration(300).delay(240)} style={{ gap: spacing.m }}>
-        <SectionHeader title="Open source" />
+      <Section overline="Open source" delay={240}>
         <Card>
           <View style={{ gap: spacing.m, alignItems: 'flex-start' }}>
             <AppText>FitCheck is MIT-licensed. Read the code, file an issue, or star it.</AppText>
             <Button label="GitHub" variant="primary" size="s" onPress={handleOpenGitHub} />
           </View>
         </Card>
-      </Animated.View>
+      </Section>
 
       <AppText variant="micro" muted align="center" style={{ marginTop: spacing.l }}>
         FitCheck 0.1.0 · renders by Higgsfield Soul

@@ -57,33 +57,55 @@ fitcheck/
 
 ### `@fitcheck/higgsfield`
 
-A typed client for the Higgsfield API, built to be regenerated against the
-official OpenAPI schema when it lands — every endpoint path lives in one file
-(`src/endpoints.ts`), every response schema in another (`src/schemas.ts`).
+A typed client for the Higgsfield **platform API**
+(`https://platform.higgsfield.ai`), speaking the same wire protocol as the
+official `@higgsfield/client` v2 SDK: auth is a single
+`authorization: Key <KEY_ID:KEY_SECRET>` header, a generation is
+`POST /{endpointSlug}` (slugs are model ids like
+`higgsfield-ai/soul/standard` — no `/v1` prefix anywhere) with the input as
+the JSON body, and the response is a flat
+`{ request_id, status, images?, ... }` you poll at
+`GET /requests/{id}/status` until terminal
+(`queued | in_progress | completed | failed | nsfw | canceled`). Endpoint
+paths live in one file (`src/endpoints.ts`), model slugs as data in another
+(`src/models.ts`), response schemas in a third (`src/schemas.ts`).
 
 ```ts
-const hf = HiggsfieldClient.create({ apiKey, apiSecret });
-
-// Onboarding: selfies → garment-agnostic avatar
-const soul = await hf.souls.create({ name: 'Amara', selfies, fullBody });
-await hf.souls.waitUntilReady(soul.id);
+const hf = HiggsfieldClient.create({ credentials: 'KEY_ID:KEY_SECRET' });
 
 // The core loop: garment → a photo of the user wearing it
 const render = await hf.tryon.renderAndWait({
-  soulId: soul.id,
+  soulId: user.soulId,
   garmentImage: product.imageUrl,
   category: 'dress',
 });
+
+// Billing-grade quote before submitting (POST /estimate/{endpoint})
+const quote = await hf.estimateRemote('higgsfield-ai/soul/standard', { prompt });
 ```
 
-It ships retries with jittered backoff (429/5xx, honoring `Retry-After`),
-idempotency keys on job-creating POSTs, an error taxonomy, cancellable
-polling, per-render cost accounting (`onUsage`), and a full in-memory mock
-(`HiggsfieldClient.mock()`) that exercises the real transport/retry/polling
-stack offline.
+It ships retries with jittered backoff (429/5xx and the account concurrency
+cap, honoring `Retry-After` with a 30s ceiling), polling at the documented
+cadence (2s × 1.5 backoff capped at 10s, plus 0–500ms jitter), an error
+taxonomy (401 auth, 403 insufficient credits, 422 validation…), per-render
+cost accounting (`onUsage` + `estimateRemote`), and a full in-memory mock
+(`HiggsfieldClient.mock()`) that speaks the real protocol through the real
+transport/retry/polling stack, offline.
 
-**Keep it server-side.** The key/secret pair never ships in the app; the
-mobile client is designed to talk to a thin FitCheck API that holds the
+Two caveats, marked loudly in the source: the try-on slug is **unverified**
+(not in the public docs yet — override via `tryOnEndpoint`), and there is
+**no public Soul ID API** yet, so `hf.souls.*` throws a clear error until you
+configure `soulsBasePath` (demo mode never calls it). ⚠️ Result URLs are
+pre-signed CDN links that **expire (~7 days)** — download or persist renders
+promptly.
+
+**Which client to use:** on a Node-only server, Higgsfield's official
+`@higgsfield/client` works great; this package exists for typed,
+multi-runtime use (Node, browsers, React Native/Hermes) with an offline mock
+mode, a FitCheck-shaped error taxonomy, and spend accounting hooks.
+
+**Keep it server-side.** The `KEY_ID:KEY_SECRET` pair never ships in the app;
+the mobile client is designed to talk to a thin FitCheck API that holds the
 credentials.
 
 ### `@fitcheck/tryon`
@@ -137,8 +159,9 @@ no other configuration.
 
 Selfies exist to build your avatar and for nothing else. In demo mode they
 never leave the phone. The production design encrypts user photos, never uses
-them for training, and deleting your account purges photos and renders. The
-Higgsfield client exposes `souls.delete()` precisely for that path.
+them for training, and deleting your account purges photos and renders. In the
+app, "Delete everything on this phone" removes selfie files from disk and
+resets the stored identity — not just UI state.
 
 ## v1 definition of done
 
@@ -148,8 +171,10 @@ Higgsfield client exposes `souls.delete()` precisely for that path.
       commission event (`parsePostback`)
 - [x] Share card ships with every render; render cost per user logged
 - [x] 200+ catalog items across 2 categories with validated feed ingestion
+- [x] Client speaks the real platform protocol (verified against
+      `@higgsfield/client` v2 and the OpenBinge integration)
 - [ ] Live affiliate program credentials (Awin/Rakuten/CJ/Partnerize accounts)
-- [ ] Higgsfield OpenAPI schema wired into `packages/higgsfield`
+- [ ] Verified try-on endpoint slug + public Soul ID API from Higgsfield
 - [ ] FitCheck server (keeps API credentials off the device, receives postbacks)
 
 ## License

@@ -146,7 +146,7 @@ export function FitCard({
             {formatCardDate(createdAt)}
           </AppText>
         </View>
-        <AppText variant="micro" style={{ opacity: 0.4 }}>
+        <AppText variant="micro" style={{ opacity: 0.35 }}>
           made with FitCheck
         </AppText>
       </View>

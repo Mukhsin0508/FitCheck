@@ -7,6 +7,7 @@
 
 export type HiggsfieldErrorCode =
   | 'authentication'
+  | 'insufficient_credits'
   | 'validation'
   | 'not_found'
   | 'rate_limited'
@@ -44,11 +45,19 @@ export class HiggsfieldError extends Error {
   }
 }
 
-/** 401/403 — key or secret is missing, wrong, or revoked. Never retried. */
+/** 401 — the KEY_ID:KEY_SECRET pair is missing, malformed, or revoked. Never retried. */
 export class AuthenticationError extends HiggsfieldError {
   constructor(message: string, options?: HiggsfieldErrorOptions) {
     super('authentication', message, options);
     this.name = 'AuthenticationError';
+  }
+}
+
+/** 403 — the account balance cannot cover this generation. Never retried. */
+export class InsufficientCreditsError extends HiggsfieldError {
+  constructor(message: string, options?: HiggsfieldErrorOptions) {
+    super('insufficient_credits', message, options);
+    this.name = 'InsufficientCreditsError';
   }
 }
 
@@ -123,14 +132,15 @@ export class PollTimeoutError extends HiggsfieldError {
   }
 }
 
-/** The job set reached a terminal state but produced no usable image. */
+/** The request reached a terminal state but produced no usable image. */
 export class JobFailedError extends HiggsfieldError {
+  /** The generation's request_id (field name kept for compatibility). */
   readonly jobSetId: string;
-  /** Statuses of the individual jobs, e.g. ['failed'] or ['nsfw']. */
+  /** Terminal status(es) observed, e.g. ['failed'] or ['nsfw']. */
   readonly jobStatuses: string[];
 
   constructor(jobSetId: string, jobStatuses: string[], options?: HiggsfieldErrorOptions) {
-    super('job_failed', `Job set ${jobSetId} finished without a result (${jobStatuses.join(', ')})`, options);
+    super('job_failed', `Request ${jobSetId} finished without a result (${jobStatuses.join(', ')})`, options);
     this.name = 'JobFailedError';
     this.jobSetId = jobSetId;
     this.jobStatuses = jobStatuses;

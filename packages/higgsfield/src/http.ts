@@ -3,12 +3,13 @@
  * Sits between the resource classes and a Transport (real fetch or mock).
  */
 
-import { AUTH_HEADERS } from './endpoints';
+import { AUTH_HEADERS, authHeaderValue } from './endpoints';
 import {
   AbortError,
   ApiError,
   AuthenticationError,
   HiggsfieldError,
+  InsufficientCreditsError,
   NetworkError,
   NotFoundError,
   RateLimitError,
@@ -21,8 +22,8 @@ import type { RequestLogEvent } from './types';
 
 export interface HttpClientOptions {
   baseUrl: string;
-  apiKey: string;
-  apiSecret: string;
+  /** `KEY_ID:KEY_SECRET` — sent as `authorization: Key <credentials>`. */
+  credentials: string;
   timeoutMs: number;
   maxRetries: number;
   onRequest?: (event: RequestLogEvent) => void;
@@ -69,6 +70,21 @@ function extractApiMessage(body: unknown): string | undefined {
   if (typeof body === 'string' && body.length > 0 && body.length < 500) return body;
   if (body && typeof body === 'object') {
     const record = body as Record<string, unknown>;
+    // The platform wraps errors in a { detail } envelope: a string, or a
+    // FastAPI-style array of { msg, loc } issues.
+    if (Array.isArray(record['detail'])) {
+      const issues = record['detail']
+        .map((issue) => {
+          if (typeof issue === 'string') return issue;
+          if (issue && typeof issue === 'object') {
+            const msg = (issue as { msg?: unknown }).msg;
+            if (typeof msg === 'string') return msg;
+          }
+          return undefined;
+        })
+        .filter((m): m is string => m !== undefined);
+      if (issues.length > 0) return issues.join('; ');
+    }
     for (const key of ['message', 'detail', 'error']) {
       const value = record[key];
       if (typeof value === 'string' && value.length > 0) return value;
@@ -82,11 +98,22 @@ function mapResponseError(response: TransportResponse, requestId: string): Higgs
   const apiMessage = extractApiMessage(body);
   const options = { status, requestId, body };
 
-  if (status === 401 || status === 403) {
+  if (status === 401) {
     return new AuthenticationError(
-      apiMessage ?? 'Higgsfield rejected the API key/secret pair.',
+      apiMessage ?? 'Higgsfield rejected the KEY_ID:KEY_SECRET credentials.',
       options,
     );
+  }
+  if (status === 403) {
+    return new InsufficientCreditsError(
+      apiMessage ?? 'The account balance cannot cover this generation.',
+      options,
+    );
+  }
+  if (status === 400 && /concurren/i.test(apiMessage ?? '')) {
+    // The account's parallel-generation cap surfaces as HTTP 400, not 429 —
+    // treat it exactly like a rate limit so the retry loop backs off.
+    return new RateLimitError(apiMessage ?? 'Concurrency cap reached.', undefined, options);
   }
   if (status === 400 || status === 422) {
     return new ValidationError(apiMessage ?? 'Higgsfield rejected the request payload.', options);
@@ -106,6 +133,7 @@ function mapResponseError(response: TransportResponse, requestId: string): Higgs
 
 function isRetryable(error: HiggsfieldError): boolean {
   if (error instanceof NetworkError || error instanceof TimeoutError) return true;
+  if (error instanceof RateLimitError) return true; // covers the 400 concurrency cap too
   return error.status !== undefined && RETRYABLE_STATUSES.has(error.status);
 }
 
@@ -139,14 +167,16 @@ export class HttpClient {
 
     const headers: Record<string, string> = {
       accept: 'application/json',
-      [AUTH_HEADERS.apiKey]: this.options.apiKey,
-      [AUTH_HEADERS.apiSecret]: this.options.apiSecret,
+      [AUTH_HEADERS.authorization]: authHeaderValue(this.options.credentials),
       'x-client-request-id': requestId,
     };
     if (req.body !== undefined) {
       headers['content-type'] = 'application/json';
     }
     if (req.method === 'POST') {
+      // The platform API does not document Idempotency-Key; unknown headers
+      // are ignored server-side, so we keep sending it — harmless today, and
+      // it protects against double-charged retries if support ever lands.
       headers['idempotency-key'] = req.idempotencyKey ?? generateRequestId('idem');
     }
 

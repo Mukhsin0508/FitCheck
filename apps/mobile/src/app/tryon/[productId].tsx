@@ -8,11 +8,18 @@
 
 import { getProductById } from '@fitcheck/catalog';
 import type { TryOnRender } from '@fitcheck/tryon';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { Platform, StyleSheet, View } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
@@ -29,6 +36,9 @@ import { radius, spacing, useTheme } from '@/theme';
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
+/** Height of the action row inside the floating bar. */
+const ACTION_ROW_HEIGHT = 48;
+
 function successBuzz() {
   if (Platform.OS !== 'web') {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -43,7 +53,7 @@ export default function TryOnScreen() {
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
 
   const { status, render, retry } = useTryOnRun(productId, pastedUrl);
 
@@ -74,6 +84,17 @@ export default function TryOnScreen() {
       successBuzz();
     }
   }, [status]);
+
+  // The result settles in: fade + a soft scale from 0.96 on the pager.
+  const entrance = useSharedValue(0.96);
+  useEffect(() => {
+    if (status === 'done') {
+      entrance.value = withSpring(1, { damping: 18 });
+    }
+  }, [status, entrance]);
+  const entranceStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: entrance.value }],
+  }));
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
@@ -112,6 +133,9 @@ export default function TryOnScreen() {
       ? productImageSource(product)
       : undefined;
 
+  // Room the content keeps clear of the floating action bar.
+  const barClearance = spacing.l + ACTION_ROW_HEIGHT + spacing.m + insets.bottom;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
       {/* Top-left close, present in every state. */}
@@ -121,8 +145,8 @@ export default function TryOnScreen() {
           accessibilityLabel="Close"
           onPress={goBack}
           style={{
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             borderRadius: radius.pill,
             alignItems: 'center',
             justifyContent: 'center',
@@ -143,82 +167,124 @@ export default function TryOnScreen() {
           />
         </View>
       ) : status === 'done' && active ? (
-        <Animated.View entering={FadeIn.duration(400)} style={{ flex: 1 }}>
-          {/* Header row: overline + cost note for the fit you're looking at. */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: spacing.l,
-              paddingBottom: spacing.m,
-            }}
-          >
-            <AppText variant="micro" muted>
-              On you
-            </AppText>
-            {active.cached ? (
-              <View
-                style={{
-                  borderRadius: radius.pill,
-                  backgroundColor: colors.surfaceAlt,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  paddingHorizontal: spacing.m,
-                  paddingVertical: spacing.xs,
-                }}
-              >
-                <AppText variant="caption" muted style={{ fontSize: 11, lineHeight: 14 }}>
-                  from cache — cost {usd.format(0)}
-                </AppText>
-              </View>
-            ) : (
-              <AppText
-                variant="caption"
-                muted
-                style={{ fontSize: 11, lineHeight: 14, opacity: 0.45 }}
-              >
-                render ~{usd.format(active.costUsd)}
+        <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingBottom: barClearance }}>
+            {/* Header row: overline + cost note for the fit you're looking at. */}
+            <Animated.View
+              entering={FadeIn.duration(300)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: spacing.l,
+                paddingBottom: spacing.m,
+              }}
+            >
+              <AppText variant="micro" muted>
+                On you
               </AppText>
-            )}
+              {active.cached ? (
+                <View
+                  style={{
+                    borderRadius: radius.pill,
+                    overflow: 'hidden',
+                    paddingHorizontal: spacing.m,
+                    paddingVertical: spacing.xs,
+                  }}
+                >
+                  {/* Lime wash in light; in dark the accent text carries it alone. */}
+                  {scheme === 'light' ? (
+                    <View
+                      style={[
+                        StyleSheet.absoluteFill,
+                        { backgroundColor: colors.accent, opacity: 0.2 },
+                      ]}
+                    />
+                  ) : null}
+                  <AppText
+                    variant="micro"
+                    color={scheme === 'dark' ? colors.accent : colors.accentInk}
+                    style={{ fontSize: 10, lineHeight: 14, letterSpacing: 1.2 }}
+                  >
+                    from cache — cost {usd.format(0)}
+                  </AppText>
+                </View>
+              ) : (
+                <AppText
+                  variant="caption"
+                  muted
+                  style={{ fontSize: 11, lineHeight: 14, opacity: 0.45 }}
+                >
+                  render ~{usd.format(active.costUsd)}
+                </AppText>
+              )}
+            </Animated.View>
+
+            <Animated.View
+              entering={FadeIn.duration(400)}
+              style={[{ flex: 1 }, entranceStyle]}
+            >
+              <FitPager
+                renders={pages}
+                activeIndex={activeIndex}
+                onIndexChange={setActiveIndex}
+              />
+            </Animated.View>
           </View>
 
-          <FitPager renders={pages} activeIndex={activeIndex} onIndexChange={setActiveIndex} />
-
-          {/* Action bar */}
+          {/* Floating action bar on blur, hairline on top, safe-bottom padded. */}
           <Animated.View
             entering={FadeInDown.duration(400).delay(120)}
-            style={{
-              paddingHorizontal: spacing.l,
-              paddingTop: spacing.l,
-              paddingBottom: insets.bottom + spacing.m,
-              gap: spacing.m,
-            }}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
           >
-            <Button
-              label={inCloset ? 'In your closet ✓' : 'Save to closet'}
-              variant="primary"
-              size="l"
-              fullWidth
-              disabled={inCloset}
-              onPress={save}
-            />
-            <View style={{ flexDirection: 'row', gap: spacing.m }}>
-              <Button label="Share" variant="accent" size="m" style={{ flex: 1 }} onPress={share} />
-              {activeProduct ? (
-                <Button label="Buy" variant="ghost" size="m" style={{ flex: 1 }} onPress={buy} />
-              ) : (
+            <BlurView
+              tint={scheme === 'dark' ? 'dark' : 'light'}
+              intensity={50}
+              style={{
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: colors.border,
+              }}
+            >
+              {/* Translucent token wash so the bar reads on platforms without blur. */}
+              <View
+                style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, opacity: 0.72 }]}
+              />
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: spacing.s,
+                  paddingHorizontal: spacing.l,
+                  paddingTop: spacing.l,
+                  paddingBottom: insets.bottom + spacing.m,
+                }}
+              >
                 <Button
-                  label="Find it to buy"
+                  label={inCloset ? 'In your closet ✓' : 'Save to closet'}
+                  variant="primary"
+                  size="m"
+                  disabled={inCloset}
+                  onPress={save}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  label="Share"
+                  variant="accent"
+                  size="m"
+                  onPress={share}
+                  style={{ width: 96, paddingHorizontal: 0 }}
+                />
+                <Button
+                  label="Buy"
                   variant="ghost"
                   size="m"
-                  style={{ flex: 1 }}
-                  disabled
+                  disabled={!activeProduct}
+                  onPress={buy}
+                  style={{ width: 76, paddingHorizontal: 0 }}
                 />
-              )}
-            </View>
+              </View>
+            </BlurView>
           </Animated.View>
-        </Animated.View>
+        </View>
       ) : (
         <RenderingPhase garmentSource={garmentSource} complete={status === 'finishing'} />
       )}

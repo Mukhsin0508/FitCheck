@@ -1,15 +1,19 @@
-/** Poll a job set until every job is terminal, with backoff and cancellation. */
+/**
+ * Poll a generation request until terminal, with the documented cadence:
+ * 2s initial delay × 1.5 backoff, capped at 10s, plus 0–500ms jitter.
+ */
 
 import { AbortError, JobFailedError, PollTimeoutError } from './errors';
 import { TERMINAL_STATUSES } from './types';
-import type { JobSet, PollOptions, RenderResult, RenderedImage } from './types';
+import type { GenerationRequest, PollOptions, RenderResult, RenderedImage } from './types';
 
 const DEFAULTS = {
-  timeoutMs: 120_000,
-  initialDelayMs: 1_000,
-  delayMs: 1_500,
-  maxDelayMs: 5_000,
+  timeoutMs: 300_000,
+  initialDelayMs: 2_000,
+  delayMs: 2_000,
+  maxDelayMs: 10_000,
   backoffFactor: 1.5,
+  jitterMs: 500,
 } as const;
 
 /** Abort-aware delay: resolves after `ms`, rejects with {@link AbortError} when the signal fires. */
@@ -31,56 +35,69 @@ export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-export function isJobSetTerminal(jobSet: JobSet): boolean {
-  return jobSet.jobs.length > 0 && jobSet.jobs.every((job) => TERMINAL_STATUSES.has(job.status));
+export function isRequestTerminal(request: GenerationRequest): boolean {
+  return TERMINAL_STATUSES.has(request.status);
 }
 
-/** Extract completed images; throws {@link JobFailedError} when nothing completed. */
-export function toRenderResult(jobSet: JobSet, durationMs: number): RenderResult {
-  const images: RenderedImage[] = jobSet.jobs
-    .filter((job) => job.status === 'completed' && job.results?.raw?.url)
-    .map((job) => ({
-      jobId: job.id,
-      // The filter above guarantees results.raw.url exists.
-      url: job.results!.raw!.url,
-      previewUrl: job.results?.min?.url,
-    }));
+/**
+ * Extract completed images; throws {@link JobFailedError} when the request
+ * finished without one (failed / nsfw / canceled / completed-but-empty).
+ *
+ * ⚠️ The returned URLs are pre-signed CDN links that EXPIRE (~7 days) —
+ * download or persist them promptly.
+ */
+export function toRenderResult(request: GenerationRequest, durationMs: number): RenderResult {
+  const images: RenderedImage[] =
+    request.status === 'completed'
+      ? (request.images ?? [])
+          .filter((image) => image.url)
+          .map((image, index) => ({
+            jobId: `${request.request_id}:${index}`,
+            url: image.url,
+          }))
+      : [];
 
   if (images.length === 0) {
-    throw new JobFailedError(
-      jobSet.id,
-      jobSet.jobs.map((job) => job.status),
-    );
+    throw new JobFailedError(request.request_id, [request.status], {
+      requestId: request.request_id,
+      body: request.error ?? undefined,
+    });
   }
-  return { jobSetId: jobSet.id, images, durationMs };
+  return { jobSetId: request.request_id, images, durationMs };
 }
 
-export async function pollJobSet(
-  fetchJobSet: () => Promise<JobSet>,
-  jobSetId: string,
+/** Poll GET /requests/{id}/status (via `fetchStatus`) until the request is terminal. */
+export async function pollRequest(
+  fetchStatus: () => Promise<GenerationRequest>,
+  requestId: string,
   options: PollOptions = {},
-): Promise<JobSet> {
+): Promise<GenerationRequest> {
   const timeoutMs = options.timeoutMs ?? DEFAULTS.timeoutMs;
   const maxDelayMs = options.maxDelayMs ?? DEFAULTS.maxDelayMs;
   const backoffFactor = options.backoffFactor ?? DEFAULTS.backoffFactor;
+  const jitterMs = options.jitterMs ?? DEFAULTS.jitterMs;
   let delayMs = options.delayMs ?? DEFAULTS.delayMs;
+
+  // Documented jitter is 0–500ms, but never longer than the current delay —
+  // so tests running with 1ms delays are not slowed to ~500ms per poll.
+  const jitter = () => Math.random() * Math.min(jitterMs, delayMs);
 
   const startedAt = Date.now();
   await sleep(options.initialDelayMs ?? DEFAULTS.initialDelayMs, options.signal);
 
   // Always poll at least once, even with a tiny timeout.
   for (;;) {
-    const jobSet = await fetchJobSet();
-    options.onProgress?.(jobSet);
-    if (isJobSetTerminal(jobSet)) {
-      return jobSet;
+    const request = await fetchStatus();
+    options.onProgress?.(request);
+    if (isRequestTerminal(request)) {
+      return request;
     }
 
     const elapsed = Date.now() - startedAt;
     if (elapsed + delayMs > timeoutMs) {
-      throw new PollTimeoutError(jobSetId, elapsed);
+      throw new PollTimeoutError(requestId, elapsed);
     }
-    await sleep(delayMs, options.signal);
+    await sleep(delayMs + jitter(), options.signal);
     delayMs = Math.min(Math.round(delayMs * backoffFactor), maxDelayMs);
   }
 }

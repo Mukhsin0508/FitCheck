@@ -28,6 +28,7 @@ export default function PasteUrlScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const [value, setValue] = useState('');
+  const [focused, setFocused] = useState(false);
 
   const trimmed = value.trim();
   const valid = useMemo(() => trimmed.length > 0 && isHttpUrl(trimmed), [trimmed]);
@@ -63,7 +64,20 @@ export default function PasteUrlScreen() {
         entering={FadeInDown.duration(300).delay(80)}
         style={{ gap: spacing.s, marginTop: spacing.xl }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.s }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.s,
+            height: 52,
+            backgroundColor: colors.surface,
+            borderRadius: radius.m,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: focused ? colors.ink : colors.border,
+            paddingLeft: spacing.l,
+            paddingRight: spacing.s,
+          }}
+        >
           <TextInput
             value={value}
             onChangeText={setValue}
@@ -73,21 +87,24 @@ export default function PasteUrlScreen() {
             autoCorrect={false}
             keyboardType="url"
             returnKeyType="go"
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             onSubmitEditing={handleSubmit}
             accessibilityLabel="Product link"
             style={{
               flex: 1,
-              height: 52,
-              backgroundColor: colors.surface,
-              borderRadius: radius.m,
-              borderWidth: StyleSheet.hairlineWidth,
-              borderColor: colors.border,
-              paddingHorizontal: spacing.l,
+              height: '100%',
               color: colors.ink,
               fontSize: 16,
             }}
           />
-          <Button label="Paste" variant="ghost" size="s" onPress={handlePaste} />
+          <Button
+            label="Paste"
+            variant="ghost"
+            size="s"
+            onPress={handlePaste}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          />
         </View>
         {showError ? (
           <AppText variant="caption" color={colors.danger}>

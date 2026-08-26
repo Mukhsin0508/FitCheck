@@ -8,18 +8,25 @@ import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { formatPrice } from '@/features/browse/format';
 import { productImageSource } from '@/lib/images';
-import { radius, spacing, useTheme } from '@/theme';
+import { radius, spacing, type, useTheme } from '@/theme';
 
 export interface ProductCardProps {
   product: Product;
 }
 
+/**
+ * Titles always reserve two caption lines so price rows align across
+ * grid columns even when a title wraps to one line.
+ */
+const TITLE_BLOCK_HEIGHT = type.caption.lineHeight * 2;
+
+/** The pill is 36pt tall; hitSlop stretches the touch target to >=44pt. */
+const TRY_ON_HIT_SLOP = { top: 4, bottom: 4, left: 8, right: 8 } as const;
+
 /** Grid card for Browse: 3:4 image, brand/title/price, and a direct 'Try on' pill. */
 export function ProductCard({ product }: ProductCardProps) {
-  const { colors, scheme } = useTheme();
+  const { colors } = useTheme();
   const router = useRouter();
-  // Text sitting on the dark image overlay — light in both schemes.
-  const onOverlay = scheme === 'dark' ? colors.ink : colors.bg;
 
   return (
     <Animated.View entering={FadeIn.duration(200)} style={{ flex: 1, maxWidth: '50%' }}>
@@ -41,32 +48,35 @@ export function ProductCard({ product }: ProductCardProps) {
             recyclingKey={product.id}
             contentFit="cover"
             transition={200}
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: '100%', height: '100%', backgroundColor: colors.surfaceAlt }}
           />
-          {product.featured ? (
-            <View
-              style={{
-                position: 'absolute',
-                top: spacing.s,
-                left: spacing.s,
-                backgroundColor: colors.overlay,
-                borderRadius: radius.pill,
-                paddingHorizontal: spacing.s,
-                paddingVertical: spacing.xs,
-              }}
-            >
-              <AppText variant="micro" color={onOverlay}>
-                ✦ shot on Soul
-              </AppText>
-            </View>
-          ) : null}
         </View>
 
         <View style={{ paddingTop: spacing.s, gap: spacing.xs }}>
-          <AppText variant="micro" muted>
-            {product.brand}
-          </AppText>
-          <AppText variant="caption" numberOfLines={2}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+            <AppText variant="micro" muted numberOfLines={1} style={{ flexShrink: 1 }}>
+              {product.brand}
+            </AppText>
+            {product.featured ? (
+              <View
+                accessibilityLabel="Shot on Soul"
+                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+              >
+                <View
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: radius.pill,
+                    backgroundColor: colors.accent,
+                  }}
+                />
+                <AppText variant="micro" muted>
+                  Soul
+                </AppText>
+              </View>
+            ) : null}
+          </View>
+          <AppText variant="caption" numberOfLines={2} style={{ minHeight: TITLE_BLOCK_HEIGHT }}>
             {product.title}
           </AppText>
           <View
@@ -84,11 +94,13 @@ export function ProductCard({ product }: ProductCardProps) {
               accessibilityRole="button"
               accessibilityLabel={`Try ${product.title} on me`}
               onPress={() => router.push(`/tryon/${product.id}`)}
+              pressedScale={0.94}
+              hitSlop={TRY_ON_HIT_SLOP}
               style={{
                 backgroundColor: colors.accent,
                 borderRadius: radius.pill,
-                paddingHorizontal: spacing.m,
-                height: 28,
+                paddingHorizontal: spacing.l,
+                height: 36,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}

@@ -2,42 +2,57 @@
  * Every Higgsfield endpoint path and auth header the client touches, in one place.
  *
  * ── PROVISIONAL ─────────────────────────────────────────────────────────────
- * These paths follow the publicly documented platform.higgsfield.ai layout as
- * of August 2026. When the official OpenAPI schema lands, regenerate THIS FILE
- * (and `schemas.ts`) against it — nothing else in the package hardcodes a path.
+ * Matches the @higgsfield/client v2 wire protocol, verified against the
+ * OpenBinge integration (Aug 2026). Key facts, from the platform openapi.json:
+ *   - Base URL https://platform.higgsfield.ai — NO /v1 prefix anywhere.
+ *   - Auth is a single header: `authorization: Key <KEY_ID:KEY_SECRET>`.
+ *   - Submit is POST /{endpointSlug} (slugs are model ids like
+ *     'higgsfield-ai/soul/standard'); slugs live in `models.ts`, not here.
+ * When the official OpenAPI schema is published, re-verify THIS FILE (and
+ * `schemas.ts`) against it — nothing else in the package hardcodes a path.
  * ────────────────────────────────────────────────────────────────────────────
  */
 
 export const DEFAULT_BASE_URL = 'https://platform.higgsfield.ai';
 
-/** Header names Higgsfield uses for API authentication. */
+/**
+ * Header names Higgsfield uses for API authentication.
+ * One header only: `authorization: Key <KEY_ID:KEY_SECRET>`.
+ */
 export const AUTH_HEADERS = {
-  apiKey: 'hf-api-key',
-  apiSecret: 'hf-secret',
+  authorization: 'authorization',
 } as const;
 
+/** Build the value for the {@link AUTH_HEADERS.authorization} header. */
+export function authHeaderValue(credentials: string): string {
+  return `Key ${credentials}`;
+}
+
 export const ENDPOINTS = {
-  /** Submit a Soul text-to-image / image-to-image generation. */
-  soulGenerate: '/v1/text2image/soul',
-  /** Submit an outfit-swap (try-on) render: person/avatar + garment image. */
-  tryOn: '/v1/image2image/soul-outfit',
-  /** Create a Soul ID (personal avatar) from reference selfies. */
-  soulCreate: '/v1/souls',
-  /** Read one Soul ID. `:id` is replaced by the client. */
-  soulGet: '/v1/souls/:id',
-  /** List Soul IDs on the account. */
-  soulList: '/v1/souls',
-  /** Delete a Soul ID and its reference images. */
-  soulDelete: '/v1/souls/:id',
-  /** Read a job set (the unit of work every generation returns). */
-  jobSetGet: '/v1/job-sets/:id',
-  /** Cancel a queued/running job set. */
-  jobSetCancel: '/v1/job-sets/:id/cancel',
+  /** Read one generation request. `:id` is replaced by the client. */
+  requestStatus: '/requests/:id/status',
+  /** Cancel a queued generation request (running ones cannot be canceled). */
+  requestCancel: '/requests/:id/cancel',
+  /** POST {content_type} → {public_url, upload_url, upload_headers}; PUT bytes to upload_url. */
+  uploads: '/uploads',
 } as const;
 
 export type EndpointName = keyof typeof ENDPOINTS;
 
-/** Replace `:param` segments, e.g. `path(ENDPOINTS.jobSetGet, { id })`. */
+/** Submissions POST directly to the endpoint slug: `/{endpointSlug}`. */
+export function submitPath(endpointSlug: string): string {
+  return `/${endpointSlug.replace(/^\/+/, '')}`;
+}
+
+/**
+ * Server-side price estimate for a submission. Slugs contain slashes, so this
+ * cannot go through {@link path} (which URL-encodes params).
+ */
+export function estimatePath(endpointSlug: string): string {
+  return `/estimate/${endpointSlug.replace(/^\/+/, '')}`;
+}
+
+/** Replace `:param` segments, e.g. `path(ENDPOINTS.requestStatus, { id })`. */
 export function path(template: string, params: Record<string, string> = {}): string {
   return template.replace(/:([A-Za-z_]+)/g, (_, name: string) => {
     const value = params[name];

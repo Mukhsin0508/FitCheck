@@ -91,14 +91,14 @@ function ProgressBar({ complete }: { complete: boolean }) {
       style={{
         height: 3,
         borderRadius: radius.pill,
-        backgroundColor: colors.shimmer,
+        backgroundColor: colors.surfaceAlt,
         overflow: 'hidden',
         alignSelf: 'stretch',
       }}
     >
       <Animated.View
         style={[
-          { height: '100%', borderRadius: radius.pill, backgroundColor: colors.ink },
+          { height: '100%', borderRadius: radius.pill, backgroundColor: colors.accent },
           fill,
         ]}
       />
@@ -114,6 +114,7 @@ export interface RenderingPhaseProps {
 }
 
 export function RenderingPhase({ garmentSource, complete = false }: RenderingPhaseProps) {
+  const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const scale = useSharedValue(1);
   // A source that fails to load falls back to the skeleton instead of an
@@ -152,6 +153,8 @@ export function RenderingPhase({ garmentSource, complete = false }: RenderingPha
             aspectRatio: 3 / 4,
             borderRadius: radius.l,
             overflow: 'hidden',
+            // The card holds its shape while the garment image streams in.
+            backgroundColor: colors.surfaceAlt,
           },
           breathing,
         ]}

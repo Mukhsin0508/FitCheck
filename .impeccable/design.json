@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-26T00:00:00Z",
+  "title": "Design System: FitCheck",
+  "extensions": {
+    "colorMeta": {
+      "bg": { "role": "neutral", "displayName": "Ivory Ground", "canonical": "#F6F4EF", "darkCanonical": "#111110", "tonalRamp": ["oklch(18% 0.004 92)", "oklch(28% 0.006 92)", "oklch(40% 0.008 92)", "oklch(52% 0.01 92)", "oklch(64% 0.01 92)", "oklch(76% 0.01 92)", "oklch(88% 0.008 92)", "oklch(97% 0.007 92)"] },
+      "surface": { "role": "neutral", "displayName": "Paper White", "canonical": "#FFFFFF", "darkCanonical": "#1A1A19", "tonalRamp": ["oklch(18% 0.004 92)", "oklch(28% 0.006 92)", "oklch(40% 0.008 92)", "oklch(52% 0.01 92)", "oklch(64% 0.01 92)", "oklch(76% 0.01 92)", "oklch(88% 0.008 92)", "oklch(100% 0 0)"] },
+      "surfaceAlt": { "role": "neutral", "displayName": "Pressed Ivory", "canonical": "#EFECE4", "darkCanonical": "#232321", "tonalRamp": ["oklch(18% 0.004 92)", "oklch(28% 0.006 92)", "oklch(40% 0.008 92)", "oklch(52% 0.01 92)", "oklch(64% 0.01 92)", "oklch(76% 0.01 92)", "oklch(88% 0.008 92)", "oklch(94.5% 0.01 92)"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#131313", "darkCanonical": "#F3F1EC", "tonalRamp": ["oklch(18% 0 0)", "oklch(28% 0 0)", "oklch(40% 0 0)", "oklch(52% 0 0)", "oklch(64% 0 0)", "oklch(76% 0 0)", "oklch(88% 0 0)", "oklch(96% 0.006 92)"] },
+      "muted": { "role": "neutral", "displayName": "Faded Ink", "canonical": "#6E6A63", "darkCanonical": "#A29D93", "tonalRamp": ["oklch(18% 0.006 92)", "oklch(28% 0.008 92)", "oklch(40% 0.01 92)", "oklch(52% 0.012 92)", "oklch(64% 0.012 92)", "oklch(76% 0.01 92)", "oklch(88% 0.008 92)", "oklch(96% 0.006 92)"] },
+      "border": { "role": "neutral", "displayName": "Ink Hairline", "canonical": "rgba(19, 19, 19, 0.12)", "darkCanonical": "rgba(243, 241, 236, 0.14)", "tonalRamp": ["rgba(19,19,19,0.04)", "rgba(19,19,19,0.08)", "rgba(19,19,19,0.12)", "rgba(19,19,19,0.2)", "rgba(19,19,19,0.28)", "rgba(19,19,19,0.4)", "rgba(19,19,19,0.55)", "rgba(19,19,19,0.75)"] },
+      "borderStrong": { "role": "neutral", "displayName": "Strong Hairline", "canonical": "rgba(19, 19, 19, 0.28)", "darkCanonical": "rgba(243, 241, 236, 0.32)", "tonalRamp": ["rgba(19,19,19,0.04)", "rgba(19,19,19,0.08)", "rgba(19,19,19,0.12)", "rgba(19,19,19,0.2)", "rgba(19,19,19,0.28)", "rgba(19,19,19,0.4)", "rgba(19,19,19,0.55)", "rgba(19,19,19,0.75)"] },
+      "accent": { "role": "primary", "displayName": "Acid Lime", "canonical": "#D4F53C", "darkCanonical": "#D4F53C", "tonalRamp": ["oklch(20% 0.05 122)", "oklch(32% 0.08 122)", "oklch(45% 0.11 122)", "oklch(58% 0.14 122)", "oklch(70% 0.17 122)", "oklch(82% 0.19 122)", "oklch(92% 0.2 122)", "oklch(97% 0.08 122)"] },
+      "accentInk": { "role": "primary", "displayName": "Ink on Lime", "canonical": "#131313", "darkCanonical": "#131313", "tonalRamp": ["oklch(18% 0 0)", "oklch(28% 0 0)", "oklch(40% 0 0)", "oklch(52% 0 0)", "oklch(64% 0 0)", "oklch(76% 0 0)", "oklch(88% 0 0)", "oklch(96% 0 0)"] },
+      "danger": { "role": "destructive", "displayName": "Brick", "canonical": "#C2452D", "darkCanonical": "#E06A50", "tonalRamp": ["oklch(18% 0.05 32)", "oklch(28% 0.08 32)", "oklch(38% 0.11 32)", "oklch(48% 0.13 32)", "oklch(58% 0.14 32)", "oklch(70% 0.11 32)", "oklch(82% 0.07 32)", "oklch(94% 0.03 32)"] },
+      "overlay": { "role": "neutral", "displayName": "Ink Veil", "canonical": "rgba(19, 19, 19, 0.55)", "darkCanonical": "rgba(0, 0, 0, 0.6)", "tonalRamp": ["rgba(19,19,19,0.1)", "rgba(19,19,19,0.2)", "rgba(19,19,19,0.35)", "rgba(19,19,19,0.45)", "rgba(19,19,19,0.55)", "rgba(19,19,19,0.7)", "rgba(19,19,19,0.85)", "rgba(19,19,19,0.95)"] },
+      "shimmer": { "role": "neutral", "displayName": "Skeleton Breath", "canonical": "rgba(19, 19, 19, 0.06)", "darkCanonical": "rgba(243, 241, 236, 0.08)", "tonalRamp": ["rgba(19,19,19,0.02)", "rgba(19,19,19,0.04)", "rgba(19,19,19,0.06)", "rgba(19,19,19,0.1)", "rgba(19,19,19,0.16)", "rgba(19,19,19,0.24)", "rgba(19,19,19,0.36)", "rgba(19,19,19,0.5)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display (Instrument Serif 400)", "purpose": "The wordmark and hero moments; 40/44 base, scaled up to 58/64 on the onboarding welcome. Never bolded — the serif carries the weight." },
+      "displayItalic": { "displayName": "Display Italic (Instrument Serif 400 Italic)", "purpose": "The 'Check' half of the wordmark and the lowercase 'fitcheck' stamp on share cards; 40/44 base." },
+      "title": { "displayName": "Title (Instrument Serif 400)", "purpose": "Screen titles, section titles, empty-state headlines, and stat numbers; 28/32." },
+      "heading": { "displayName": "Heading (System 600)", "purpose": "Card and row headings; 20/26." },
+      "body": { "displayName": "Body (System 400)", "purpose": "Prose, descriptions, button labels (600 inside buttons); 16/23." },
+      "caption": { "displayName": "Caption (System 400)", "purpose": "Footnotes, statuses, chip and small-button labels; 13/18." },
+      "micro": { "displayName": "Micro (System 400, +1.4 tracking, uppercase)", "purpose": "Overlines, step counters, tab labels, dates, watermarks; 11/14. The editorial whisper above every serif title." }
+    },
+    "spacing": { "xs": 4, "s": 8, "m": 12, "l": 16, "xl": 24, "xxl": 32, "xxxl": 48, "note": "A 4pt rhythm; screen gutters are l (16), section gaps xl (24), grid-cell gaps xs (4)." },
+    "radius": { "s": 10, "m": 16, "l": 24, "xl": 32, "pill": 999, "note": "Cards and camera frames are l; images and inputs m; thumbnails s; every button, chip, dot, and progress bar is pill." },
+    "shadows": [],
+    "motion": [
+      { "name": "press-spring", "value": "withSpring(scale 0.97, damping 20, stiffness 400)", "purpose": "Every touchable via PressableScale, paired with a light haptic tick; the app's default touch feel." },
+      { "name": "enter-fade", "value": "FadeInDown 300ms, staggered 60ms per sibling (up to 550ms on the welcome collage)", "purpose": "Screen sections and list items entering; nothing slides sideways." },
+      { "name": "prompt-crossfade", "value": "FadeIn 250ms on key change", "purpose": "Selfie-step prompt text swaps; the keyed remount does the crossfade." },
+      { "name": "image-fade", "value": "expo-image transition 200ms", "purpose": "Every image resolves with a soft fade over a surfaceAlt placeholder — never a pop." },
+      { "name": "skeleton-breathe", "value": "opacity 0.5 to 1, 700ms, reversing repeat", "purpose": "Skeleton blocks while renders and images load." },
+      { "name": "avatar-pulse", "value": "scale 1 to 1.04, 900ms each way, inOut ease, infinite", "purpose": "The portrait ring while the avatar builds." },
+      { "name": "build-progress", "value": "withTiming to 100% over 4500ms, Easing.out(cubic)", "purpose": "The lime avatar-build bar — a real bar with a real end, not an indeterminate loop." }
+    ],
+    "haptics": [
+      { "name": "tick", "value": "impactAsync(Light)", "purpose": "Every PressableScale press." },
+      { "name": "capture", "value": "impactAsync(Medium)", "purpose": "A selfie lands in the tray." },
+      { "name": "toggle", "value": "selectionAsync()", "purpose": "Layout chips and other selection switches." },
+      { "name": "celebrate", "value": "notificationAsync(Success)", "purpose": "Avatar ready, card saved to photos, demo avatar chosen." },
+      { "name": "guard", "value": "Platform.OS !== 'web' + .catch(() => {})", "purpose": "Every haptic call is web-guarded and swallows failures." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The ink pill — the one main action per screen. Heights 56/48/38 (l/m/s); label is the ground color at weight 600; disabled fades to 40%.",
+      "html": "<button class=\"ds-btn-primary\">Put it on me</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 56px; padding: 0 24px; border: none; border-radius: 999px; background: var(--color-ink, #131313); color: var(--color-bg, #F6F4EF); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.15s; } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:disabled { opacity: 0.4; cursor: default; }"
+    },
+    {
+      "name": "Accent Button",
+      "kind": "button",
+      "refersTo": "button-accent",
+      "description": "Acid lime with ink text — spent rarely: the shutter ring, GitHub star, celebration-tier actions. Same pill geometry as primary.",
+      "html": "<button class=\"ds-btn-accent\">Take the shot</button>",
+      "css": ".ds-btn-accent { display: inline-flex; align-items: center; justify-content: center; height: 56px; padding: 0 24px; border: none; border-radius: 999px; background: var(--color-accent, #D4F53C); color: var(--color-accent-ink, #131313); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.15s; } .ds-btn-accent:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Transparent pill with a strong-hairline outline; the calm second action ('Save to photos', 'Use the demo avatar').",
+      "html": "<button class=\"ds-btn-ghost\">Save to photos</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; height: 56px; padding: 0 24px; background: transparent; color: var(--color-ink, #131313); border: 1px solid var(--color-border-strong, rgba(19, 19, 19, 0.28)); border-radius: 999px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.15s; } .ds-btn-ghost:active { transform: scale(0.97); } .ds-btn-ghost:disabled { opacity: 0.4; cursor: default; }"
+    },
+    {
+      "name": "Text Button",
+      "kind": "button",
+      "refersTo": "button-text",
+      "description": "A bare ink label for tertiary moves ('Back', 'Pick from library instead'); no border, no fill, still a full-height touch target.",
+      "html": "<button class=\"ds-btn-text\">Pick from library instead</button>",
+      "css": ".ds-btn-text { display: inline-flex; align-items: center; justify-content: center; height: 38px; padding: 0 16px; background: transparent; border: none; color: var(--color-ink, #131313); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; } .ds-btn-text:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Destructive Text Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "The text button in Brick for irreversible acts ('Delete everything on this phone'); always followed by a native confirm dialog, never a bare tap.",
+      "html": "<button class=\"ds-btn-danger\">Delete everything on this phone</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 16px; background: transparent; border: none; color: var(--color-danger, #C2452D); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; } .ds-btn-danger:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Chip",
+      "kind": "button",
+      "refersTo": "chip-toggle",
+      "description": "A 36pt outline pill toggle (share layouts, filters); selection inverts it to solid ink with ground text and fires a selection haptic.",
+      "html": "<span><button class=\"ds-chip ds-chip-selected\">Side by side</button> <button class=\"ds-chip\">The grid</button></span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 16px; background: transparent; color: var(--color-ink, #131313); border: 1px solid var(--color-border-strong, rgba(19, 19, 19, 0.28)); border-radius: 999px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; } .ds-chip-selected { background: var(--color-ink, #131313); color: var(--color-bg, #F6F4EF); border-color: var(--color-ink, #131313); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "Paper-white surface, radius 24, one ink hairline, 16px padding, overflow hidden. Flat — no card in the app carries a shadow.",
+      "html": "<div class=\"ds-card\"><p class=\"ds-card-body\">FitCheck is MIT-licensed. Read the code, file an issue, or star it.</p></div>",
+      "css": ".ds-card { background: var(--color-surface, #FFFFFF); border: 1px solid var(--color-border, rgba(19, 19, 19, 0.12)); border-radius: 24px; padding: 16px; overflow: hidden; } .ds-card-body { margin: 0; color: var(--color-ink, #131313); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 16px; line-height: 23px; }"
+    },
+    {
+      "name": "Stat Card",
+      "kind": "card",
+      "refersTo": "card-stat",
+      "description": "One of three equal cards on the You tab: the number set in the serif title voice, a micro label whispered beneath, everything centered.",
+      "html": "<div class=\"ds-stat\"><span class=\"ds-stat-value\">12</span><span class=\"ds-stat-label\">fits tried</span></div>",
+      "css": ".ds-stat { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; background: var(--color-surface, #FFFFFF); border: 1px solid var(--color-border, rgba(19, 19, 19, 0.12)); border-radius: 24px; padding: 16px; min-width: 104px; } .ds-stat-value { font-family: 'Instrument Serif', Georgia, serif; font-size: 28px; line-height: 32px; color: var(--color-ink, #131313); } .ds-stat-label { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; line-height: 14px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--color-muted, #6E6A63); }"
+    },
+    {
+      "name": "Screen",
+      "kind": "layout",
+      "refersTo": "screen-scaffold",
+      "description": "Every route's scaffold: ivory ground, safe-area top inset (off under modals), 16px gutters, bottom inset + 32px, optional ScrollView with taps persisting through the keyboard.",
+      "html": "<div class=\"ds-screen\"><span class=\"ds-screen-hint\">ivory ground &middot; 16px gutters</span></div>",
+      "css": ".ds-screen { background: var(--color-bg, #F6F4EF); padding: 16px; min-height: 120px; border-radius: 8px; } .ds-screen-hint { color: var(--color-muted, #6E6A63); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; }"
+    },
+    {
+      "name": "AppText",
+      "kind": "custom",
+      "refersTo": "text-primitive",
+      "description": "The only text primitive: seven variants (display, displayItalic, title, heading, body, caption, micro), muted flag, explicit color override. Nothing renders a raw Text.",
+      "html": "<div class=\"ds-type\"><span class=\"ds-type-micro\">Step 2 of 5</span><span class=\"ds-type-title\">Chin up a little</span><span class=\"ds-type-body\">Body copy stays in the system face.</span></div>",
+      "css": ".ds-type { display: flex; flex-direction: column; gap: 4px; } .ds-type-micro { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; line-height: 14px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--color-muted, #6E6A63); } .ds-type-title { font-family: 'Instrument Serif', Georgia, serif; font-size: 28px; line-height: 32px; color: var(--color-ink, #131313); } .ds-type-body { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 16px; line-height: 23px; color: var(--color-ink, #131313); }"
+    },
+    {
+      "name": "Skeleton",
+      "kind": "custom",
+      "refersTo": "skeleton-breath",
+      "description": "The wait state: a shimmer-token block (radius 10, pill when round) breathing opacity 0.5 to 1 over 700ms while renders and images load.",
+      "html": "<div class=\"ds-skeleton\"></div>",
+      "css": ".ds-skeleton { width: 160px; height: 16px; border-radius: 10px; background: var(--color-shimmer, rgba(19, 19, 19, 0.06)); animation: ds-breathe 0.7s ease-in-out infinite alternate; } @keyframes ds-breathe { from { opacity: 0.5; } to { opacity: 1; } }"
+    },
+    {
+      "name": "SectionHeader",
+      "kind": "custom",
+      "refersTo": "section-header",
+      "description": "A micro overline whispering above a serif title, with an optional trailing action; the settings screens swap the serif title for a hairline divider + overline alone.",
+      "html": "<div class=\"ds-section\"><span class=\"ds-section-overline\">Your closet</span><span class=\"ds-section-title\">Saved fits</span></div>",
+      "css": ".ds-section { display: flex; flex-direction: column; gap: 4px; } .ds-section-overline { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; line-height: 14px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--color-muted, #6E6A63); } .ds-section-title { font-family: 'Instrument Serif', Georgia, serif; font-size: 28px; line-height: 32px; color: var(--color-ink, #131313); }"
+    },
+    {
+      "name": "EmptyState",
+      "kind": "custom",
+      "refersTo": "empty-state",
+      "description": "Centered serif title, muted body capped at 280pt, one primary action. Copy explains what happened and what to do next, in one calm breath.",
+      "html": "<div class=\"ds-empty\"><span class=\"ds-empty-title\">Can't find that fit</span><span class=\"ds-empty-body\">Render it again and it'll be right here.</span></div>",
+      "css": ".ds-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px 16px; } .ds-empty-title { font-family: 'Instrument Serif', Georgia, serif; font-size: 28px; line-height: 32px; color: var(--color-ink, #131313); text-align: center; } .ds-empty-body { max-width: 280px; text-align: center; color: var(--color-muted, #6E6A63); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 16px; line-height: 23px; }"
+    },
+    {
+      "name": "PressableScale",
+      "kind": "custom",
+      "refersTo": "pressable-scale",
+      "description": "The touch primitive under every button, chip, card, and tab: springs to 0.97 on press (damping 20, stiffness 400) with a light haptic tick. The pressed state is never invisible.",
+      "html": "<button class=\"ds-pressable\">Anything tappable</button>",
+      "css": ".ds-pressable { background: var(--color-surface, #FFFFFF); border: 1px solid var(--color-border, rgba(19, 19, 19, 0.12)); border-radius: 16px; padding: 12px 16px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 16px; color: var(--color-ink, #131313); cursor: pointer; transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); } .ds-pressable:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "EditorialTabBar",
+      "kind": "nav",
+      "refersTo": "tab-bar-editorial",
+      "description": "Text-only tabs on the ground color over a top hairline: micro-caps labels, no icons, a 16x3 lime tick under the active tab. Padding lives on the pressables so the whole bar height stays a 44pt-plus target.",
+      "html": "<div class=\"ds-tabbar\"><button class=\"ds-tab ds-tab-active\">Browse<span class=\"ds-tab-tick\"></span></button><button class=\"ds-tab\">Closet<span class=\"ds-tab-tick ds-tab-tick-off\"></span></button><button class=\"ds-tab\">You<span class=\"ds-tab-tick ds-tab-tick-off\"></span></button></div>",
+      "css": ".ds-tabbar { display: flex; background: var(--color-bg, #F6F4EF); border-top: 1px solid var(--color-border, rgba(19, 19, 19, 0.12)); } .ds-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 0; background: transparent; border: none; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; font-weight: 500; color: var(--color-muted, #6E6A63); cursor: pointer; } .ds-tab-active { color: var(--color-ink, #131313); font-weight: 700; } .ds-tab-tick { width: 16px; height: 3px; border-radius: 2px; background: var(--color-accent, #D4F53C); } .ds-tab-tick-off { background: transparent; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Ivory Lookbook",
+    "overview": "FitCheck reads like an editorial fashion spread that happens to be an app: ivory paper (#F6F4EF), ink type (#131313), and exactly one acid accent (#D4F53C) spent like a stylist spends a statement piece. Instrument Serif is the display voice — the FitCheck wordmark (roman 'Fit', italic 'Check'), screen titles, empty-state headlines, and the stat numbers on the You tab — while everything functional sits in the system sans. Surfaces are flat paper: white cards seated with ink hairlines, never shadows, and the dark scheme is the same magazine printed on night stock (#111110 ground, warm off-white ink) rather than an inverted afterthought — every color routes through useTheme() tokens so both schemes are first-class.\n\nThe acid lime is the garment of the outfit: it marks the active tab tick, the shutter ring, the avatar-build progress bar, the portrait ring, and the current step dot — identity and progress, never decoration and never large text. Touch is tactile everywhere: every tappable springs to 0.97 with a light haptic tick, commits (capturing a selfie, saving a card, finishing the avatar) get a heavier or success haptic, and every haptic call is guarded for web and swallows failures. Images always fade in over a pressed-ivory placeholder; waits breathe as skeletons or a real progress bar with a real end. Copy is a friend who knows clothes: sentence case, contractions, plain verbs ('Put it on me', 'That's enough'), honest about the demo, and never 'seamless', 'effortless', or 'elevate'.",
+    "keyCharacteristics": [
+      "One accent: acid lime appears only as identity and progress marks (tab tick, shutter, build bar, avatar ring, step dot) — never as decoration, borders, or text color.",
+      "Serif voice: Instrument Serif for display and title moments only; body, buttons, and navigation stay in the system sans.",
+      "Micro overlines: 11pt uppercase +1.4 tracking labels whisper above serif titles and section dividers — the editorial signature.",
+      "Flat paper: hairline ink borders seat every surface; no card, button, or bar carries a shadow.",
+      "Tactile by default: spring-scale 0.97 pressed states and haptics on every touch, heavier on commit actions, all web-guarded.",
+      "Both schemes are real: every color is a useTheme() token; dark is warm night stock, not inverted light.",
+      "A 4pt rhythm: spacing 4/8/12/16/24/32/48, gutters 16, section gaps 24, grid-cell gaps 4."
+    ],
+    "rules": [
+      { "name": "The One-Accent Rule", "body": "Lime means 'you' and 'progress' — the active tab, the shutter, the build bar, the avatar ring, the current step. It never fills large areas, never colors text, and never appears twice in one view for two different reasons. Everything else is ink on ivory.", "section": "colors" },
+      { "name": "The Token Rule", "body": "No hardcoded colors, ever. Every color is read from useTheme() so light and dark are both right; translucent needs use the border, borderStrong, overlay, and shimmer tokens rather than ad-hoc rgba.", "section": "colors" },
+      { "name": "The Serif Rule", "body": "Instrument Serif is for what a magazine would set in display: the wordmark, screen and section titles, empty-state headlines, stat numbers, the share-card stamp. It never sets body copy, buttons, captions, or navigation.", "section": "typography" },
+      { "name": "The Overline Rule", "body": "Hierarchy is micro overline, then serif title, then sans body. Steps, dates, tab labels, and section labels are always micro: 11pt, uppercase, +1.4 tracking, usually muted.", "section": "typography" },
+      { "name": "The Paper Rule", "body": "Elevation is a hairline, not a shadow. Cards, inputs, tab bars, and share chrome are seated with border or borderStrong lines on flat surfaces; focus is shown by the hairline turning ink.", "section": "elevation" },
+      { "name": "The Committed-Touch Rule", "body": "Every tap target is at least 44pt, every pressed state is visible (spring scale 0.97), and commit actions carry a haptic: light tick on press, medium on capture, selection on toggles, success on completion — always Platform.OS !== 'web' guarded with .catch(() => {}).", "section": "interaction" },
+      { "name": "The Honest-Wait Rule", "body": "Images fade in over a surfaceAlt placeholder or Skeleton; the avatar build is a determinate lime bar with rotating status lines and a real end. Copy about waits and the demo tells the truth ('our cost, not yours', 'Demo mode renders a lookalike').", "section": "interaction" }
+    ],
+    "dos": [
+      "Do write copy like a friend who knows clothes: sentence case, contractions, concrete verbs ('Put it on me', 'Redo my avatar', 'That's enough'), and errors as one calm sentence with a way forward ('Couldn't save that one. Give it another go.').",
+      "Do give every image a placeholder state — surfaceAlt behind expo-image with contentFit and a 200ms transition, recyclingKey in lists, Skeleton for unresolved layouts.",
+      "Do stagger entrances with FadeInDown at 300ms and roughly 60ms between siblings; crossfade text swaps by re-keying a FadeIn view.",
+      "Do keep destructive flows two-step: a Brick-colored text button, then a native confirm whose cancel is 'Never mind' and whose confirm names the act ('Delete it').",
+      "Do respect the 4pt grid: gutters 16, section gaps 24, card padding 16, grid-cell gaps 4 — and pill-radius every button, chip, and progress bar.",
+      "Do keep the share card story-ready: no app furniture, the italic 'fitcheck' stamp, an 'Aug 26'-style micro date, and the 'made with FitCheck' watermark at 35% opacity bottom-right."
+    ],
+    "donts": [
+      "Don't hardcode a color, and don't design a screen that only works in one scheme.",
+      "Don't use marketing words — 'seamless', 'effortless', 'elevate' — anywhere, and allow at most one celebration exclamation in the entire app; errors and empty states never exclaim.",
+      "Don't put shadows on surfaces, icons in the tab bar, or the serif in body copy or buttons.",
+      "Don't spend lime on decoration, large fills, borders, or text — and never introduce a second accent hue.",
+      "Don't ship a tap target under 44pt, an invisible pressed state, or an unguarded haptic call.",
+      "Don't fake progress: no indeterminate loops where a determinate bar is possible, and no dishonest copy about what the demo does or what data leaves the phone (none does)."
+    ]
+  }
+}

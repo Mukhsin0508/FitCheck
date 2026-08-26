@@ -1,6 +1,10 @@
 /** Shared types for the Higgsfield client. */
 
-/** Normalized job lifecycle. Unknown API statuses map to 'unknown' (treated as still running). */
+/**
+ * Normalized request lifecycle. Wire aliases (in_queue → queued,
+ * processing → in_progress, cancelled → canceled) are folded in by
+ * `normalizeStatus`; unknown API statuses map to 'unknown' (still running).
+ */
 export type JobStatus =
   | 'queued'
   | 'in_progress'
@@ -18,41 +22,54 @@ export const TERMINAL_STATUSES: ReadonlySet<JobStatus> = new Set([
 ]);
 
 export interface MediaRef {
+  /**
+   * Pre-signed CDN link. ⚠️ EXPIRES (~7 days) — download or persist the bytes
+   * promptly; never store this URL as the long-term copy of a render.
+   */
   url: string;
-  /** Content type when the API reports one, e.g. 'image/jpeg'. */
+  /** Content type when the API reports one (wire: `content_type`), e.g. 'image/jpeg'. */
   type?: string;
 }
 
-export interface Job {
-  id: string;
+/**
+ * The unit of work every submission returns — the flat wire shape of
+ * POST /{endpoint} and GET /requests/{id}/status. Field names mirror the wire
+ * (snake_case); `status` is normalized and `images[].type` maps `content_type`.
+ */
+export interface GenerationRequest {
+  request_id: string;
   status: JobStatus;
-  /** Full-resolution and preview outputs, when the job has produced them. */
-  results?: {
-    raw?: MediaRef;
-    min?: MediaRef;
-  };
-  error?: string;
-}
-
-/** The unit of work every generation call returns; poll it until terminal. */
-export interface JobSet {
-  id: string;
-  jobs: Job[];
+  status_url?: string;
+  cancel_url?: string;
+  error?: string | null;
+  images?: MediaRef[];
+  video?: MediaRef;
+  audio?: MediaRef;
+  audios?: MediaRef[];
 }
 
 /** One finished image, normalized for callers. */
 export interface RenderedImage {
+  /** Synthetic per-image id: `${request_id}:${index}` (the wire has no per-image ids). */
   jobId: string;
+  /** Pre-signed CDN link — expires in ~7 days, download promptly. */
   url: string;
   previewUrl?: string;
 }
 
-/** What `waitForJobSet` / `renderAndWait` resolve to. */
+/** What `waitForResult` / `renderAndWait` resolve to. */
 export interface RenderResult {
+  /** The generation's request_id (kept as `jobSetId` for compatibility). */
   jobSetId: string;
   images: RenderedImage[];
   /** Wall-clock time from submit (or first poll) to terminal, in ms. */
   durationMs: number;
+}
+
+/** Server-side price quote from POST /estimate/{endpoint}. */
+export interface CostEstimate {
+  credits: number;
+  usd: number;
 }
 
 /** Image input for generation calls: a URL the API can fetch, or an uploaded asset id. */
@@ -70,11 +87,13 @@ export function toImageInput(input: ImageInputLike): ImageInput {
 /** Garment categories the try-on endpoint distinguishes. */
 export type GarmentCategory = 'top' | 'bottom' | 'dress' | 'outerwear' | 'full_body' | 'auto';
 
-/** Fired after every job-creating call, so callers can log spend per render. */
+/** Fired after every request-creating call, so callers can log spend per render. */
 export interface UsageEvent {
   /** Which client call produced the spend. */
   operation: 'tryon' | 'soul_generate' | 'soul_create';
+  /** The generation's request_id (field name kept for compatibility). */
   jobSetId: string;
+  /** The endpoint slug the request was submitted to. */
   model: string;
   imageCount: number;
   /** Client-side estimate; reconcile against invoices, not billing-grade. */
@@ -83,19 +102,24 @@ export interface UsageEvent {
 }
 
 export interface PollOptions {
-  /** Overall deadline for the job set, in ms. Default 120_000. */
+  /** Overall deadline for the request, in ms. Default 300_000 (docs: ~5 min for images). */
   timeoutMs?: number;
-  /** First wait before polling, in ms. Default 1_000. */
+  /** First wait before polling, in ms. Default 2_000 (documented cadence). */
   initialDelayMs?: number;
-  /** Delay between polls, in ms. Grows by `backoffFactor` up to `maxDelayMs`. Default 1_500. */
+  /** Delay between polls, in ms. Grows by `backoffFactor` up to `maxDelayMs`. Default 2_000. */
   delayMs?: number;
-  /** Cap for the growing delay. Default 5_000. */
+  /** Cap for the growing delay. Default 10_000 (documented cadence). */
   maxDelayMs?: number;
-  /** Multiplier applied to the delay after each poll. Default 1.5. */
+  /** Multiplier applied to the delay after each poll. Default 1.5 (documented cadence). */
   backoffFactor?: number;
+  /**
+   * Random 0..jitterMs added to each wait (documented: 0–500ms). Default 500,
+   * but never more than the current delay, so tiny test delays stay tiny.
+   */
+  jitterMs?: number;
   signal?: AbortSignal;
   /** Called after every poll with the latest snapshot. */
-  onProgress?: (jobSet: JobSet) => void;
+  onProgress?: (request: GenerationRequest) => void;
 }
 
 export interface RequestLogEvent {
@@ -109,12 +133,24 @@ export interface RequestLogEvent {
 }
 
 export interface HiggsfieldClientOptions {
-  /** `hf-api-key` header value. */
-  apiKey: string;
-  /** `hf-secret` header value. */
-  apiSecret: string;
+  /** `KEY_ID:KEY_SECRET`, sent as `authorization: Key <credentials>`. */
+  credentials?: string;
+  /** Legacy pair — joined as `${apiKey}:${apiSecret}` when `credentials` is absent. */
+  apiKey?: string;
+  /** Legacy pair — see {@link HiggsfieldClientOptions.apiKey}. */
+  apiSecret?: string;
   /** Override for testing/staging. Default {@link DEFAULT_BASE_URL}. */
   baseUrl?: string;
+  /**
+   * Override the try-on endpoint slug (the default in `models.ts` is a best
+   * guess — the try-on model is not in the public docs yet).
+   */
+  tryOnEndpoint?: string;
+  /**
+   * The Soul ID API is not in the public platform docs yet; souls.* throws
+   * until this is set to the real base path (e.g. '/souls') or your proxy's.
+   */
+  soulsBasePath?: string;
   /** Per-attempt HTTP timeout in ms. Default 30_000. */
   timeoutMs?: number;
   /** Retries after the first attempt for retryable failures. Default 3. */

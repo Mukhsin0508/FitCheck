@@ -27,7 +27,7 @@ function Dots({ count, active }: { count: number; active: number }) {
       style={{
         height: DOTS_ZONE,
         flexDirection: 'row',
-        gap: spacing.s,
+        gap: spacing.xs,
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -39,8 +39,7 @@ function Dots({ count, active }: { count: number; active: number }) {
             width: 6,
             height: 6,
             borderRadius: radius.pill,
-            backgroundColor: i === active ? colors.ink : colors.borderStrong,
-            opacity: i === active ? 1 : 0.45,
+            backgroundColor: i === active ? colors.accent : colors.borderStrong,
           }}
         />
       ))}
@@ -55,6 +54,7 @@ export interface FitPagerProps {
 }
 
 export function FitPager({ renders, activeIndex, onIndexChange }: FitPagerProps) {
+  const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const [pagerHeight, setPagerHeight] = useState(0);
   const multiple = renders.length > 1;
@@ -102,6 +102,8 @@ export function FitPager({ renders, activeIndex, onIndexChange }: FitPagerProps)
                     aspectRatio: 3 / 4,
                     borderRadius: radius.xl,
                     overflow: 'hidden',
+                    // Quiet placeholder while the render image streams in.
+                    backgroundColor: colors.surfaceAlt,
                   }}
                 >
                   <Image

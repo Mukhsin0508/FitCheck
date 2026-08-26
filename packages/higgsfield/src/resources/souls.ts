@@ -1,11 +1,19 @@
 /**
  * Soul IDs: garment-agnostic avatars built from a user's selfies.
- * FitCheck creates one per user at onboarding and reuses it for every render.
+ *
+ * ⚠️ NOT IMPLEMENTED ON THE PLATFORM (yet). The public platform API
+ * (platform.higgsfield.ai) documents no Soul ID management endpoints — the
+ * earlier '/v1/souls' paths this resource used were guessed and are wrong.
+ * Every method throws a clear ApiError UNLESS the client is constructed with
+ * `soulsBasePath` (HiggsfieldClientOptions), pointing at the real path once
+ * Higgsfield publishes it — or at your own proxy that implements it.
+ *
+ * The resource itself stays: FitCheck's app types reference it, and demo mode
+ * never calls it.
  */
 
-import { ENDPOINTS, path } from '../endpoints';
 import { estimateCostUsd } from '../costs';
-import { PollTimeoutError } from '../errors';
+import { ApiError, PollTimeoutError } from '../errors';
 import type { HttpClient } from '../http';
 import { sleep } from '../polling';
 import { parseSoul, parseSoulList, type Soul } from '../schemas';
@@ -28,9 +36,27 @@ export class SoulsResource {
   constructor(
     private readonly http: HttpClient,
     private readonly onUsage?: (event: UsageEvent) => void,
+    private readonly basePath?: string,
   ) {}
 
+  /** Throws unless a custom soulsBasePath was configured. Returns the normalized base. */
+  private requireBasePath(): string {
+    if (!this.basePath) {
+      throw new ApiError(
+        'The Soul ID API is not in the public platform docs yet (platform.higgsfield.ai ' +
+          'exposes no souls endpoints). Configure HiggsfieldClientOptions.soulsBasePath ' +
+          'once Higgsfield publishes it, or point it at a proxy that implements it.',
+      );
+    }
+    return `/${this.basePath.replace(/^\/+|\/+$/g, '')}`;
+  }
+
+  private soulPath(soulId: string): string {
+    return `${this.requireBasePath()}/${encodeURIComponent(soulId)}`;
+  }
+
   async create(params: CreateSoulParams): Promise<Soul> {
+    const basePath = this.requireBasePath();
     const body: Record<string, unknown> = {
       name: params.name,
       reference_images: params.selfies.map(toImageInput),
@@ -40,7 +66,7 @@ export class SoulsResource {
 
     const payload = await this.http.request({
       method: 'POST',
-      path: ENDPOINTS.soulCreate,
+      path: basePath,
       body,
       signal: params.signal,
       idempotencyKey: params.idempotencyKey,
@@ -62,7 +88,7 @@ export class SoulsResource {
   async get(soulId: string, options?: { signal?: AbortSignal }): Promise<Soul> {
     const payload = await this.http.request({
       method: 'GET',
-      path: path(ENDPOINTS.soulGet, { id: soulId }),
+      path: this.soulPath(soulId),
       signal: options?.signal,
     });
     return parseSoul(payload);
@@ -71,7 +97,7 @@ export class SoulsResource {
   async list(options?: { signal?: AbortSignal }): Promise<Soul[]> {
     const payload = await this.http.request({
       method: 'GET',
-      path: ENDPOINTS.soulList,
+      path: this.requireBasePath(),
       signal: options?.signal,
     });
     return parseSoulList(payload);
@@ -79,6 +105,7 @@ export class SoulsResource {
 
   /** Poll until the avatar reaches a terminal status (completed/failed/nsfw/canceled). */
   async waitUntilReady(soulId: string, options: PollOptions = {}): Promise<Soul> {
+    this.requireBasePath();
     const timeoutMs = options.timeoutMs ?? 300_000; // avatar training runs longer than renders
     const delayMs = options.delayMs ?? 3_000;
     const startedAt = Date.now();
@@ -100,7 +127,7 @@ export class SoulsResource {
   async delete(soulId: string, options?: { signal?: AbortSignal }): Promise<void> {
     await this.http.request({
       method: 'DELETE',
-      path: path(ENDPOINTS.soulDelete, { id: soulId }),
+      path: this.soulPath(soulId),
       signal: options?.signal,
     });
   }
