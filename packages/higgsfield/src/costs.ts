@@ -15,7 +15,8 @@ export const MODEL_COSTS_USD: Record<string, number> = {
   // Endpoint slugs (the `model` value UsageEvents now carry).
   'higgsfield-ai/soul/standard': 0.09,
   'higgsfield-ai/soul/v2/standard': 0.09,
-  'higgsfield-ai/fashion-factory': 0.09,
+  // Live estimate Aug 26 2026: 1.472 credits = $0.092/image.
+  'higgsfield-ai/popcorn/auto': 0.092,
   // Legacy short names, kept for older call sites and dashboards.
   soul: 0.09,
   'soul-outfit': 0.09,

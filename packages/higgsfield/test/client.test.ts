@@ -31,7 +31,11 @@ describe('tryon.renderAndWait', () => {
     const hf = HiggsfieldClient.withTransport(transport, { onUsage: (e) => usage.push(e) });
 
     const result = await hf.tryon.renderAndWait(
-      { soulId: 'soul_demo', garmentImage: 'https://cdn.example.com/dress.jpg', category: 'dress' },
+      {
+        personImage: 'https://cdn.example.com/me.jpg',
+        garmentImage: 'https://cdn.example.com/dress.jpg',
+        category: 'dress',
+      },
       FAST_POLL,
     );
 
@@ -52,20 +56,30 @@ describe('tryon.renderAndWait', () => {
     expect(usage[0]!.estimatedCostUsd).toBe(estimateCostUsd(MODELS.tryOn.endpoint, 1));
   });
 
-  it('sends the input as a flat JSON body (no params envelope)', async () => {
+  it('sends the verified Popcorn contract: prompt + image_urls [person, garment]', async () => {
     const transport = new MockTransport();
     const hf = HiggsfieldClient.withTransport(transport);
     await hf.tryon.create({
-      soulId: 'soul_1',
+      personImage: 'https://cdn.example.com/me.jpg',
       garmentImage: 'https://cdn.example.com/g.jpg',
       category: 'dress',
     });
 
     const body = transport.requests[0]!.body as Record<string, unknown>;
     expect(body['params']).toBeUndefined();
-    expect(body['soul_id']).toBe('soul_1');
-    expect(body['garment_image']).toBe('https://cdn.example.com/g.jpg');
-    expect(body['category']).toBe('dress');
+    expect(body['image_urls']).toEqual([
+      'https://cdn.example.com/me.jpg',
+      'https://cdn.example.com/g.jpg',
+    ]);
+    expect(String(body['prompt'])).toContain('dress');
+    expect(body['aspect_ratio']).toBe('3:4');
+  });
+
+  it('rejects soulId-only calls on the public try-on path (needs personImage)', async () => {
+    const hf = HiggsfieldClient.mock();
+    await expect(
+      hf.tryon.create({ soulId: 'soul_1', garmentImage: 'https://cdn.example.com/g.jpg' }),
+    ).rejects.toThrow(/personImage/);
   });
 
   it('honors a tryOnEndpoint override (the default slug is unverified)', async () => {
@@ -73,7 +87,7 @@ describe('tryon.renderAndWait', () => {
     const hf = HiggsfieldClient.withTransport(transport, {
       tryOnEndpoint: 'higgsfield-ai/tryon/real-slug',
     });
-    await hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' });
+    await hf.tryon.create({ personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/g.jpg' });
     expect(pathnameOf(transport.requests[0]!.url)).toBe('/higgsfield-ai/tryon/real-slug');
   });
 
@@ -88,7 +102,7 @@ describe('tryon.renderAndWait', () => {
     const hf = HiggsfieldClient.mock({ jobOutcome: 'nsfw' });
     await expect(
       hf.tryon.renderAndWait(
-        { soulId: 'soul_demo', garmentImage: 'https://cdn.example.com/top.jpg' },
+        { personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/top.jpg' },
         FAST_POLL,
       ),
     ).rejects.toMatchObject({ name: 'JobFailedError', jobStatuses: ['nsfw'] });
@@ -98,7 +112,7 @@ describe('tryon.renderAndWait', () => {
     const hf = HiggsfieldClient.mock({ pollsToComplete: 10_000 });
     await expect(
       hf.tryon.renderAndWait(
-        { soulId: 'soul_demo', garmentImage: 'https://cdn.example.com/top.jpg' },
+        { personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/top.jpg' },
         { ...FAST_POLL, timeoutMs: 25 },
       ),
     ).rejects.toThrow(PollTimeoutError);
@@ -110,7 +124,7 @@ describe('tryon.renderAndWait', () => {
       apiKey: 'key_123',
       apiSecret: 'secret_456',
     });
-    await hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' });
+    await hf.tryon.create({ personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/g.jpg' });
 
     const submit = transport.requests[0]!;
     expect(submit.headers[AUTH_HEADERS.authorization]).toBe('Key key_123:secret_456');
@@ -120,7 +134,7 @@ describe('tryon.renderAndWait', () => {
   it("accepts the combined credentials form ('id:secret')", async () => {
     const transport = new MockTransport();
     const hf = HiggsfieldClient.withTransport(transport, { credentials: 'kid:ksecret' });
-    await hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' });
+    await hf.tryon.create({ personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/g.jpg' });
     expect(transport.requests[0]!.headers['authorization']).toBe('Key kid:ksecret');
   });
 
@@ -135,7 +149,7 @@ describe('requests (jobs resource)', () => {
     const transport = new MockTransport({ pollsToComplete: 10_000 });
     const hf = HiggsfieldClient.withTransport(transport);
     const submitted = await hf.tryon.create({
-      soulId: 's',
+      personImage: 'https://cdn.example.com/me.jpg',
       garmentImage: 'https://cdn.example.com/g.jpg',
     });
 
@@ -151,7 +165,7 @@ describe('requests (jobs resource)', () => {
   it('waitForResult on a canceled request throws JobFailedError', async () => {
     const hf = HiggsfieldClient.mock({ jobOutcome: 'canceled' });
     const submitted = await hf.tryon.create({
-      soulId: 's',
+      personImage: 'https://cdn.example.com/me.jpg',
       garmentImage: 'https://cdn.example.com/g.jpg',
     });
     await expect(hf.jobs.waitForResult(submitted.request_id, FAST_POLL)).rejects.toMatchObject({
@@ -194,7 +208,7 @@ describe('retry policy', () => {
     const hf = HiggsfieldClient.withTransport(transport);
 
     const submitted = await hf.tryon.create({
-      soulId: 's',
+      personImage: 'https://cdn.example.com/me.jpg',
       garmentImage: 'https://cdn.example.com/g.jpg',
     });
     expect(submitted.request_id).toBeTruthy();
@@ -207,7 +221,7 @@ describe('retry policy', () => {
     const hf = HiggsfieldClient.withTransport(transport);
 
     await expect(
-      hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' }),
+      hf.tryon.create({ personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/g.jpg' }),
     ).rejects.toThrow(AuthenticationError);
     expect(transport.requests).toHaveLength(1);
   });
@@ -218,7 +232,7 @@ describe('retry policy', () => {
     const hf = HiggsfieldClient.withTransport(transport);
 
     await expect(
-      hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' }),
+      hf.tryon.create({ personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/g.jpg' }),
     ).rejects.toThrow(InsufficientCreditsError);
     expect(transport.requests).toHaveLength(1);
   });
@@ -229,7 +243,7 @@ describe('retry policy', () => {
     const hf = HiggsfieldClient.withTransport(transport);
 
     await expect(
-      hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' }),
+      hf.tryon.create({ personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/g.jpg' }),
     ).rejects.toThrow('garment_image is required');
     expect(transport.requests).toHaveLength(1);
   });
@@ -243,7 +257,7 @@ describe('retry policy', () => {
     const hf = HiggsfieldClient.withTransport(transport);
 
     const submitted = await hf.tryon.create({
-      soulId: 's',
+      personImage: 'https://cdn.example.com/me.jpg',
       garmentImage: 'https://cdn.example.com/g.jpg',
     });
     expect(submitted.request_id).toBeTruthy();
@@ -257,7 +271,7 @@ describe('retry policy', () => {
     const hf = HiggsfieldClient.withTransport(transport, { maxRetries: 1 });
 
     await expect(
-      hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' }),
+      hf.tryon.create({ personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/g.jpg' }),
     ).rejects.toMatchObject({ code: 'server', status: 500 });
     expect(transport.requests).toHaveLength(2); // initial + 1 retry
   });
@@ -270,7 +284,7 @@ describe('retry policy', () => {
       const hf = HiggsfieldClient.withTransport(transport);
 
       const pending = hf.tryon.create({
-        soulId: 's',
+        personImage: 'https://cdn.example.com/me.jpg',
         garmentImage: 'https://cdn.example.com/g.jpg',
       });
       // Uncapped, the retry would sleep 3_600_000ms and this advance would never release it.
@@ -293,7 +307,7 @@ describe('request logging', () => {
     const hf = HiggsfieldClient.withTransport(transport, { onRequest: (e) => events.push(e) });
 
     await expect(
-      hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' }),
+      hf.tryon.create({ personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/g.jpg' }),
     ).rejects.toThrow(ValidationError);
 
     expect(events).toHaveLength(1);
@@ -311,7 +325,7 @@ describe('request logging', () => {
     });
 
     await expect(
-      hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' }),
+      hf.tryon.create({ personImage: 'https://cdn.example.com/me.jpg', garmentImage: 'https://cdn.example.com/g.jpg' }),
     ).rejects.toMatchObject({ code: 'server' });
 
     expect(events.map((e) => [e.attempt, e.status])).toEqual([
@@ -352,7 +366,7 @@ describe('cancellation', () => {
     const controller = new AbortController();
     const pending = hf.tryon.renderAndWait(
       {
-        soulId: 's',
+        personImage: 'https://cdn.example.com/me.jpg',
         garmentImage: 'https://cdn.example.com/g.jpg',
         signal: controller.signal,
       },
@@ -383,7 +397,7 @@ describe('plumbing', () => {
   });
 
   it('estimates render cost per endpoint slug with a safe default', () => {
-    expect(estimateCostUsd('higgsfield-ai/fashion-factory', 2)).toBeCloseTo(0.18);
+    expect(estimateCostUsd('higgsfield-ai/popcorn/auto', 2)).toBeCloseTo(0.184);
     expect(estimateCostUsd('some-future-model')).toBe(0.09);
   });
 });

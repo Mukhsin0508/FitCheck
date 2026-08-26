@@ -4,9 +4,12 @@
  * the only file that changes.
  *
  * Slugs double as submit paths: POST /{endpoint} with the input as the body.
+ * All slugs and input contracts below were verified against the published
+ * OpenAPI schema (Higgsfield API 2.0.0, docs.higgsfield.ai/docs/openapi.json,
+ * snapshot in docs/higgsfield-openapi.json) and live estimates on Aug 26 2026.
  */
 export const MODELS = {
-  /** Soul text-to-image — the documented, verified image endpoint. */
+  /** Soul text-to-image: { prompt*, num_images, resolution 2K|4K, aspect_ratio }. */
   soulImage: {
     endpoint: 'higgsfield-ai/soul/standard',
     defaults: { aspect_ratio: '3:4', num_images: 1 },
@@ -17,15 +20,24 @@ export const MODELS = {
     defaults: { aspect_ratio: '3:4', num_images: 1 },
   },
   /**
-   * ⚠️ UNVERIFIED SLUG — the try-on (outfit-swap) endpoint is NOT in the
-   * public platform docs yet. 'higgsfield-ai/fashion-factory' is our best
-   * guess from product naming; the real slug may differ when it ships.
-   * Override it without touching code via
-   * `HiggsfieldClientOptions.tryOnEndpoint` (or per resource).
+   * One-shot persona from a single reference photo:
+   * { prompt*, image_reference_url*, style_strength, batch_size, ... }.
+   * The closest public thing to a Soul ID until custom references get an API.
+   */
+  soulReference: {
+    endpoint: 'higgsfield-ai/soul/reference',
+    defaults: { aspect_ratio: '3:4', batch_size: 1 },
+  },
+  /**
+   * Try-on runs on Popcorn (Higgsfield's multi-image editing model):
+   * { prompt*, image_urls: [person, garment], num_images, resolution
+   * 720p|1600p, aspect_ratio, seed }. ~$0.092/image (live estimate).
+   * Override via HiggsfieldClientOptions.tryOnEndpoint if a dedicated
+   * try-on model ships later.
    */
   tryOn: {
-    endpoint: 'higgsfield-ai/fashion-factory',
-    defaults: {},
+    endpoint: 'higgsfield-ai/popcorn/auto',
+    defaults: { aspect_ratio: '3:4', num_images: 1, resolution: '720p' },
   },
 } as const satisfies Record<string, { endpoint: string; defaults: Record<string, unknown> }>;
 

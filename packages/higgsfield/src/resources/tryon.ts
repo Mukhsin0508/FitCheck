@@ -1,11 +1,12 @@
 /**
- * Try-on renders: FitCheck's core call. Person (Soul avatar or photo) +
- * garment image → photoreal image of that person wearing the garment.
+ * Try-on renders: FitCheck's core call. Person photo + garment image →
+ * photoreal image of that person wearing the garment.
  *
- * ⚠️ The try-on endpoint slug is UNVERIFIED (not in the public platform docs
- * yet — see models.ts), and the input contract below is a best guess pending
- * the slug's real schema: { soul_id?, person_image?, garment_image, category,
- * ...extra }. Override the slug via HiggsfieldClientOptions.tryOnEndpoint.
+ * Runs on Popcorn (higgsfield-ai/popcorn/auto), Higgsfield's multi-image
+ * editing model — contract verified against the published OpenAPI schema:
+ * { prompt*, image_urls: [person, garment], num_images, resolution, aspect_ratio }.
+ * The person must be an image URL; there is no public avatar-id API yet
+ * (soulId is accepted for forward compatibility but needs a custom endpoint).
  */
 
 import { submitPath } from '../endpoints';
@@ -25,19 +26,25 @@ import type {
 import type { JobsResource } from './jobs';
 
 export interface CreateTryOnParams {
-  /** Soul avatar id created during onboarding. Preferred: garment-agnostic identity. */
+  /**
+   * Avatar id, once Higgsfield ships a public custom-reference API. Today the
+   * public try-on path needs personImage; soulId alone throws unless a custom
+   * tryOnEndpoint that accepts it is configured.
+   */
   soulId?: string;
-  /** Or a direct person photo, when no avatar exists yet. */
+  /** The person: a fetchable photo URL (upload local files via `client.uploads`). */
   personImage?: ImageInputLike;
   /** The garment to put on them — product image URL or uploaded asset. */
   garmentImage: ImageInputLike;
-  /** Helps the model with fit and occlusion. Default 'auto'. */
+  /** Steers the edit prompt ('dress', 'outerwear', …). Default 'auto'. */
   category?: GarmentCategory;
-  /** Images to render (some plans support >1 for variations). Default 1. */
+  /** Override the generated edit prompt entirely. */
+  prompt?: string;
+  /** Images to render (Popcorn: num_images). Default 1. */
   imageCount?: number;
   /** Optional webhook Higgsfield calls when the request is terminal. */
   webhookUrl?: string;
-  /** Free-form passthrough for params the real schema adds later. */
+  /** Free-form passthrough merged into the body last. */
   extra?: Record<string, unknown>;
   idempotencyKey?: string;
   signal?: AbortSignal;
@@ -47,6 +54,30 @@ export interface CreateTryOnParams {
 function toWireImage(input: ImageInputLike): string {
   const image = toImageInput(input);
   return image.kind === 'url' ? image.url : image.id;
+}
+
+const GARMENT_NOUN: Record<GarmentCategory, string> = {
+  top: 'top',
+  bottom: 'bottoms',
+  dress: 'dress',
+  outerwear: 'outerwear piece',
+  full_body: 'outfit',
+  auto: 'garment',
+};
+
+/**
+ * The edit instruction the model gets when the caller doesn't supply one.
+ * The identity language matters: without it the models tend to age the
+ * subject, add weight, and wax the skin.
+ */
+export function defaultTryOnPrompt(category: GarmentCategory): string {
+  const noun = GARMENT_NOUN[category];
+  return (
+    `The exact same person from the first image, 100% face accuracy, same age ` +
+    `and same body, now wearing the ${noun} from the second image. Full-body ` +
+    'view, natural fit and drape, bright minimal room with soft window light, ' +
+    'photoreal, no waxy skin, no plastic retouching.'
+  );
 }
 
 export class TryOnResource {
@@ -63,22 +94,37 @@ export class TryOnResource {
 
   /** Submit a try-on render. Returns the request to poll (or use {@link renderAndWait}). */
   async create(params: CreateTryOnParams): Promise<GenerationRequest> {
+    const usingDefaultEndpoint = this.endpoint === MODELS.tryOn.endpoint;
+    if (!params.personImage && usingDefaultEndpoint) {
+      throw new TypeError(
+        'createTryOn needs personImage: the public try-on path (Popcorn) takes image URLs, ' +
+          'and there is no public avatar-id API yet. Upload the photo via client.uploads first.',
+      );
+    }
     if (!params.soulId && !params.personImage) {
       throw new TypeError('createTryOn needs either soulId or personImage');
     }
 
     const imageCount = params.imageCount ?? 1;
+    const category = params.category ?? 'auto';
 
-    // POST /{endpointSlug} with the input object as the JSON body — no
-    // { params: ... } envelope. Field names are our best guess (see header).
+    // POST /{endpointSlug}, input as the flat JSON body (no envelope).
+    // Default-model defaults only apply to the default endpoint — override
+    // endpoints (e.g. nano-banana-2) have different valid resolutions.
+    const defaults = usingDefaultEndpoint
+      ? MODELS.tryOn.defaults
+      : { aspect_ratio: '3:4' as const };
     const body: Record<string, unknown> = {
-      ...MODELS.tryOn.defaults,
-      soul_id: params.soulId,
-      person_image: params.personImage ? toWireImage(params.personImage) : undefined,
-      garment_image: toWireImage(params.garmentImage),
-      category: params.category ?? 'auto',
+      ...defaults,
+      prompt: params.prompt ?? defaultTryOnPrompt(category),
+      image_urls: [
+        ...(params.personImage ? [toWireImage(params.personImage)] : []),
+        toWireImage(params.garmentImage),
+      ],
       num_images: imageCount,
       webhook_url: params.webhookUrl,
+      // Non-default endpoints may want the avatar id; Popcorn ignores it.
+      ...(params.soulId ? { soul_id: params.soulId } : {}),
       ...params.extra,
     };
 

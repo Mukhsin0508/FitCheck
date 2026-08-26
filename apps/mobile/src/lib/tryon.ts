@@ -56,13 +56,20 @@ function resolveDemoFit(request: TryOnRequest): string {
   return assetRef(pick);
 }
 
-/** Renders persist in the zustand store, so the cache survives restarts. */
+/**
+ * Renders persist in the zustand store, so the cache survives restarts.
+ * Keys are namespaced by mode so demo renders never mask real ones.
+ */
+const cacheMode = higgsfieldCredentials() ? 'real' : 'demo';
 const storeRenderCache: RenderCache = {
   async get(key: string): Promise<TryOnRender | undefined> {
-    return useStore.getState().renders[key];
+    return useStore.getState().renders[`${cacheMode}:${key}`];
   },
   async set(key: string, render: TryOnRender): Promise<void> {
-    useStore.getState().cacheRender(key, render);
+    // In real mode a mock render means the API fell over this once — don't
+    // cache it, so the next attempt tries the real provider again.
+    if (cacheMode === 'real' && render.provider === 'mock') return;
+    useStore.getState().cacheRender(`${cacheMode}:${key}`, render);
   },
 };
 

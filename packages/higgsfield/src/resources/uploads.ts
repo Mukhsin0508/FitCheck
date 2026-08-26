@@ -56,9 +56,16 @@ export class UploadsResource {
     options?: { signal?: AbortSignal },
   ): Promise<string> {
     const target = await this.createUploadUrl(contentType, options);
+    // upload_headers are part of the pre-signed S3 signature. Adding our own
+    // content-type ALONGSIDE theirs ("Content-Type") makes fetch join the two
+    // into "x, x", which breaks the signature — de-dupe case-insensitively.
+    const headers: Record<string, string> = { ...target.upload_headers };
+    if (!Object.keys(headers).some((key) => key.toLowerCase() === 'content-type')) {
+      headers['content-type'] = contentType;
+    }
     const response = await this.fetchFn(target.upload_url, {
       method: 'PUT',
-      headers: { 'content-type': contentType, ...target.upload_headers },
+      headers,
       // BodyInit isn't in this package's ES2022 lib; the runtime accepts all three forms.
       body: body as never,
       signal: options?.signal ?? null,

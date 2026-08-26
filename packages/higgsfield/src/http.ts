@@ -167,6 +167,9 @@ export class HttpClient {
 
     const headers: Record<string, string> = {
       accept: 'application/json',
+      // The platform WAF rejects default library user agents with 403.
+      // Browsers drop this header silently (forbidden), which is fine.
+      'user-agent': 'fitcheck-higgsfield/0.1',
       [AUTH_HEADERS.authorization]: authHeaderValue(this.options.credentials),
       'x-client-request-id': requestId,
     };
