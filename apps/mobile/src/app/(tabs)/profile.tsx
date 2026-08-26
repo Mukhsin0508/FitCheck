@@ -39,9 +39,16 @@ function confirmDestructive(
 
 function StatCard({ value, label, footnote }: { value: string; label: string; footnote?: string }) {
   return (
-    <Card style={{ flex: 1 }}>
+    // Tight padding + a one-line value: '$12.48' has to fit a third of a
+    // 304px-wide embed without breaking mid-token.
+    <Card style={{ flex: 1, paddingHorizontal: spacing.s }}>
       <View style={{ alignItems: 'center', gap: spacing.xs }}>
-        <AppText variant="title" align="center">
+        <AppText
+          variant="title"
+          align="center"
+          numberOfLines={1}
+          style={{ fontSize: 22, lineHeight: 26 }}
+        >
           {value}
         </AppText>
         <AppText variant="micro" muted align="center">

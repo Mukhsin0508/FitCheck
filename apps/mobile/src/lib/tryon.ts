@@ -20,6 +20,7 @@ import {
 } from '@fitcheck/tryon';
 
 import { assetRef } from '@/lib/images';
+import { ProxyTryOnProvider, tryOnProxyPath } from '@/lib/proxyProvider';
 import { RealHiggsfieldProvider, higgsfieldCredentials } from '@/lib/realProvider';
 import { useStore } from '@/state/store';
 
@@ -63,15 +64,16 @@ function resolveDemoFit(request: TryOnRequest): string {
  * Renders persist in the zustand store, so the cache survives restarts.
  * Keys are namespaced by mode so demo renders never mask real ones.
  */
-const cacheMode = higgsfieldCredentials() ? 'real' : 'demo';
+const proxyPath = tryOnProxyPath();
+const cacheMode = higgsfieldCredentials() ? 'real' : proxyPath ? 'proxy' : 'demo';
 const storeRenderCache: RenderCache = {
   async get(key: string): Promise<TryOnRender | undefined> {
     return useStore.getState().renders[`${cacheMode}:${key}`];
   },
   async set(key: string, render: TryOnRender): Promise<void> {
-    // In real mode a mock render means the API fell over this once — don't
-    // cache it, so the next attempt tries the real provider again.
-    if (cacheMode === 'real' && render.provider === 'mock') return;
+    // Outside demo mode a mock render means the API fell over (or the visitor
+    // has no photo yet) — don't cache it, so the next attempt goes real again.
+    if (cacheMode !== 'demo' && render.provider === 'mock') return;
     useStore.getState().cacheRender(`${cacheMode}:${key}`, render);
   },
 };
@@ -85,14 +87,18 @@ const demoProvider = new MockTryOnProvider({
 });
 
 /**
- * Real renders first when dev credentials are present (.env), demo renders as
- * the safety net — a failing API call falls through instead of breaking the app.
+ * Real renders first when available, demo renders as the safety net — a
+ * failing call falls through instead of breaking the app. Direct credentials
+ * (.env, native dev builds) win; the web embed goes through the render proxy,
+ * which only takes visitors who onboarded with their own photos.
  */
 const credentials = higgsfieldCredentials();
 export const tryOnService = new TryOnService({
   providers: credentials
     ? [new RealHiggsfieldProvider(credentials), demoProvider]
-    : [demoProvider],
+    : proxyPath
+      ? [new ProxyTryOnProvider(proxyPath), demoProvider]
+      : [demoProvider],
   fallbackOnError: true,
   cache: storeRenderCache,
   onCost: (record) => useStore.getState().logCost(record),
@@ -106,7 +112,11 @@ export function requestForProduct(productId: string): TryOnRequest {
   return {
     person: {
       soulId: avatar.soulId,
-      imageUrl: avatar.localUri ?? (avatar.imageKey ? assetRef(avatar.imageKey) : undefined),
+      // Full-body beats the face portrait for dressing the whole person.
+      imageUrl:
+        avatar.fullBodyUri ??
+        avatar.localUri ??
+        (avatar.imageKey ? assetRef(avatar.imageKey) : undefined),
       avatarVersion: avatar.version,
     },
     garment: {
@@ -126,7 +136,10 @@ export function requestForPastedUrl(imageUrl: string): TryOnRequest {
   return {
     person: {
       soulId: avatar.soulId,
-      imageUrl: avatar.localUri ?? (avatar.imageKey ? assetRef(avatar.imageKey) : undefined),
+      imageUrl:
+        avatar.fullBodyUri ??
+        avatar.localUri ??
+        (avatar.imageKey ? assetRef(avatar.imageKey) : undefined),
       avatarVersion: avatar.version,
     },
     garment: { imageUrl, category: 'auto' },

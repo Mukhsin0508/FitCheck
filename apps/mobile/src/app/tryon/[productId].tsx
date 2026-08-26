@@ -264,14 +264,14 @@ export default function TryOnScreen() {
                   size="m"
                   disabled={inCloset}
                   onPress={save}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, paddingHorizontal: spacing.s }}
                 />
                 <Button
                   label="Share"
                   variant="accent"
                   size="m"
                   onPress={share}
-                  style={{ width: 96, paddingHorizontal: 0 }}
+                  style={{ width: 72, paddingHorizontal: 0 }}
                 />
                 <Button
                   label="Buy"
@@ -279,7 +279,7 @@ export default function TryOnScreen() {
                   size="m"
                   disabled={!activeProduct}
                   onPress={buy}
-                  style={{ width: 76, paddingHorizontal: 0 }}
+                  style={{ width: 56, paddingHorizontal: 0 }}
                 />
               </View>
             </BlurView>

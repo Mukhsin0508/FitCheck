@@ -15,7 +15,7 @@ import { generateId } from '@/lib/ids';
 
 /** Best-effort removal of the avatar portrait file from disk. */
 function deletePortraitFile(localUri: string | undefined): void {
-  if (!localUri) return;
+  if (!localUri || localUri.startsWith('data:')) return; // web photos aren't files
   try {
     const file = new File(localUri);
     if (file.exists) file.delete();
@@ -34,6 +34,8 @@ export interface AvatarState {
   imageKey?: string;
   /** Local uri of the user's own portrait selfie, when they onboarded with photos. */
   localUri?: string;
+  /** Full-body shot for try-on renders (web: a data URL that survives reloads). */
+  fullBodyUri?: string;
   /** How many selfies were captured at onboarding. */
   selfieCount?: number;
   /** Higgsfield Soul id once a real avatar exists. */

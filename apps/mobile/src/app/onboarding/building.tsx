@@ -47,6 +47,8 @@ const PORTRAIT_FILENAME = 'avatar-portrait.jpg';
  * uri as a fallback when the copy fails, so the avatar still shows.
  */
 function persistPortrait(firstUri: string | undefined): string | undefined {
+  // Web photos are data URLs — no filesystem, and they persist as-is.
+  if (Platform.OS === 'web') return firstUri;
   let localUri = firstUri;
   if (firstUri) {
     try {
@@ -128,6 +130,12 @@ export default function OnboardingBuilding() {
         name: undefined,
         imageKey: firstUri ? undefined : 'avatar',
         localUri: persistPortrait(firstUri),
+        // The last shot is the full-body one — what a try-on renders against.
+        // Web-only: data URLs persist; native cache files get swept above.
+        fullBodyUri:
+          Platform.OS === 'web' && draft.uris.length > 0
+            ? draft.uris[draft.uris.length - 1]
+            : undefined,
         selfieCount: draft.uris.length,
       });
       draft.reset();

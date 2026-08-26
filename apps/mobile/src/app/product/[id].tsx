@@ -213,7 +213,13 @@ export default function ProductScreen() {
           borderColor: colors.border,
         }}
       >
-        <BlurView tint={blurTint} intensity={30} style={StyleSheet.absoluteFill} />
+        {/* The radius on the blur layer itself: on web, backdrop-filter can
+            escape the parent's rounded overflow clip and paint a square. */}
+        <BlurView
+          tint={blurTint}
+          intensity={30}
+          style={[StyleSheet.absoluteFill, { borderRadius: radius.pill, overflow: 'hidden' }]}
+        />
         <View
           style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}
         >
@@ -276,16 +282,31 @@ export default function ProductScreen() {
               </AppText>
             </PressableScale>
           ) : null}
-          <View style={{ flexDirection: 'row', gap: spacing.m }}>
-            <Button
-              label="Try it on me"
-              variant="primary"
-              size="m"
-              onPress={goTryOn}
-              style={{ flex: 1 }}
-            />
-            <Button label={`Buy at ${merchant}`} variant="ghost" size="m" onPress={onBuy} />
-          </View>
+          {/* Narrow viewports (the landing-page embed) stack the actions;
+              phones keep them side by side. */}
+          {width < 360 ? (
+            <View style={{ gap: spacing.s }}>
+              <Button label="Try it on me" variant="primary" size="m" fullWidth onPress={goTryOn} />
+              <Button label={`Buy at ${merchant}`} variant="ghost" size="m" fullWidth onPress={onBuy} />
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', gap: spacing.m }}>
+              <Button
+                label="Try it on me"
+                variant="primary"
+                size="m"
+                onPress={goTryOn}
+                style={{ flex: 1 }}
+              />
+              <Button
+                label={`Buy at ${merchant}`}
+                variant="ghost"
+                size="m"
+                onPress={onBuy}
+                style={{ flexShrink: 1 }}
+              />
+            </View>
+          )}
         </View>
       </View>
     </View>

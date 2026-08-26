@@ -2,7 +2,7 @@ import type { Product } from '@fitcheck/affiliates';
 import { categories, getProductsByCategory } from '@fitcheck/catalog';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, ScrollView, View } from 'react-native';
+import { FlatList, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -59,26 +59,53 @@ export default function BrowseScreen() {
           onPress={() => router.push('/paste-url')}
         />
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ marginTop: spacing.l, marginHorizontal: -spacing.l }}
-        contentContainerStyle={{ paddingHorizontal: spacing.l, gap: spacing.s }}
-      >
-        <Chip
-          label={`All · ${counts.all}`}
-          selected={category === 'all'}
-          onPress={() => selectCategory('all')}
-        />
-        {categories.map((cat) => (
+      {/* Mice can't drag a hidden-scrollbar row, so the web build wraps the
+          chips instead of scrolling them. */}
+      {Platform.OS === 'web' ? (
+        <View
+          style={{
+            marginTop: spacing.l,
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: spacing.s,
+          }}
+        >
           <Chip
-            key={cat.id}
-            label={`${cat.label} · ${counts[cat.id]}`}
-            selected={category === cat.id}
-            onPress={() => selectCategory(cat.id)}
+            label={`All · ${counts.all}`}
+            selected={category === 'all'}
+            onPress={() => selectCategory('all')}
           />
-        ))}
-      </ScrollView>
+          {categories.map((cat) => (
+            <Chip
+              key={cat.id}
+              label={`${cat.label} · ${counts[cat.id]}`}
+              selected={category === cat.id}
+              onPress={() => selectCategory(cat.id)}
+            />
+          ))}
+        </View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginTop: spacing.l, marginHorizontal: -spacing.l }}
+          contentContainerStyle={{ paddingHorizontal: spacing.l, gap: spacing.s }}
+        >
+          <Chip
+            label={`All · ${counts.all}`}
+            selected={category === 'all'}
+            onPress={() => selectCategory('all')}
+          />
+          {categories.map((cat) => (
+            <Chip
+              key={cat.id}
+              label={`${cat.label} · ${counts[cat.id]}`}
+              selected={category === cat.id}
+              onPress={() => selectCategory(cat.id)}
+            />
+          ))}
+        </ScrollView>
+      )}
       <AppText variant="micro" muted style={{ marginTop: spacing.m }}>
         {data.length} {data.length === 1 ? 'piece' : 'pieces'} · rendered on your avatar
       </AppText>

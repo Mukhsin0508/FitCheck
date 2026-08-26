@@ -70,10 +70,21 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={fg} />
       ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.s }}>
+        // flexShrink + minWidth keep a long label inside a tight button; the
+        // label then ellipsizes instead of bleeding over its neighbors.
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.s,
+            flexShrink: 1,
+            minWidth: 0,
+          }}
+        >
           <AppText
             variant={size === 's' ? 'caption' : 'body'}
             color={fg}
+            numberOfLines={1}
             style={{ fontWeight: '600' }}
           >
             {label}

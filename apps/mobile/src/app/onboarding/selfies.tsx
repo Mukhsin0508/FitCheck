@@ -19,6 +19,7 @@ import { Button } from '@/components/Button';
 import { PressableScale } from '@/components/PressableScale';
 import { Screen } from '@/components/Screen';
 import { draft } from '@/features/onboarding/session';
+import { pickImagesWeb, webPickerAvailable } from '@/lib/webPicker';
 import { radius, spacing, useTheme } from '@/theme';
 
 const TOTAL = 5;
@@ -113,7 +114,8 @@ export default function OnboardingSelfies() {
       return next;
     });
     // A dropped photo shouldn't linger in the cache — best-effort delete.
-    if (removed) {
+    // (Web photos are data URLs; there's no file to remove.)
+    if (removed && Platform.OS !== 'web') {
       try {
         const file = new File(removed);
         if (file.exists) file.delete();
@@ -138,6 +140,14 @@ export default function OnboardingSelfies() {
 
   const pickFromLibrary = async () => {
     if (done) return;
+    // Web gets its own picker: a real input clicked in the user's gesture,
+    // returning reload-proof data URLs (expo-image-picker's synthetic-click
+    // web path can wedge inside the embed, and its blob: URLs die on reload).
+    if (webPickerAvailable()) {
+      const picked = await pickImagesWeb(TOTAL - uris.length);
+      addPhotos(picked);
+      return;
+    }
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -319,7 +329,12 @@ export default function OnboardingSelfies() {
           </PressableScale>
         ) : null}
 
-        <Button label="Pick from library instead" variant="text" size="s" onPress={pickFromLibrary} />
+        <Button
+          label={Platform.OS === 'web' ? 'Choose photos from this computer' : 'Pick from library instead'}
+          variant="text"
+          size="s"
+          onPress={pickFromLibrary}
+        />
 
         {uris.length >= MIN_OK && !done ? (
           <Button
