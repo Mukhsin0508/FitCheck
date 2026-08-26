@@ -14,6 +14,8 @@ export interface MockTransportOptions {
   pollsToComplete?: number;
   /** Terminal status for new job sets. Default 'completed'. */
   jobOutcome?: 'completed' | 'failed' | 'nsfw';
+  /** Terminal status souls reach after `pollsToComplete` polls. Default 'completed'. */
+  soulOutcome?: 'completed' | 'failed' | 'nsfw';
   /** Produces result URLs for completed jobs. */
   resultUrl?: (jobId: string) => string;
 }
@@ -39,7 +41,9 @@ export class MockTransport implements Transport {
   private readonly jobSets = new Map<string, MockJob[]>();
   private readonly souls = new Map<string, { name?: string; polls: number }>();
   private readonly failureQueue: QueuedFailure[] = [];
-  private readonly options: Required<Pick<MockTransportOptions, 'latencyMs' | 'pollsToComplete' | 'jobOutcome'>> &
+  private readonly options: Required<
+    Pick<MockTransportOptions, 'latencyMs' | 'pollsToComplete' | 'jobOutcome' | 'soulOutcome'>
+  > &
     MockTransportOptions;
 
   constructor(options: MockTransportOptions = {}) {
@@ -47,6 +51,7 @@ export class MockTransport implements Transport {
       latencyMs: options.latencyMs ?? 0,
       pollsToComplete: options.pollsToComplete ?? 2,
       jobOutcome: options.jobOutcome ?? 'completed',
+      soulOutcome: options.soulOutcome ?? 'completed',
       ...options,
     };
   }
@@ -107,7 +112,8 @@ export class MockTransport implements Transport {
         return ok({ ok: true });
       }
       soul.polls += 1;
-      const status = soul.polls >= this.options.pollsToComplete ? 'completed' : 'in_progress';
+      const status =
+        soul.polls >= this.options.pollsToComplete ? this.options.soulOutcome : 'in_progress';
       return ok({ id, name: soul.name, status });
     }
     if (req.method === 'GET' && pathname === ENDPOINTS.soulList) {
@@ -115,7 +121,7 @@ export class MockTransport implements Transport {
         items: [...this.souls.entries()].map(([id, soul]) => ({
           id,
           name: soul.name,
-          status: soul.polls >= this.options.pollsToComplete ? 'completed' : 'in_progress',
+          status: soul.polls >= this.options.pollsToComplete ? this.options.soulOutcome : 'in_progress',
         })),
       });
     }

@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
+  AbortError,
   AuthenticationError,
   HiggsfieldClient,
   JobFailedError,
@@ -9,6 +10,7 @@ import {
   ValidationError,
   estimateCostUsd,
   normalizeStatus,
+  type RequestLogEvent,
   type UsageEvent,
 } from '../src';
 import { path, ENDPOINTS, AUTH_HEADERS } from '../src/endpoints';
@@ -126,6 +128,64 @@ describe('retry policy', () => {
     ).rejects.toMatchObject({ code: 'server', status: 500 });
     expect(transport.requests).toHaveLength(2); // initial + 1 retry
   });
+
+  it('caps an oversized Retry-After at 30s instead of honoring it verbatim', async () => {
+    vi.useFakeTimers();
+    try {
+      const transport = new MockTransport();
+      transport.queueFailure({ status: 429, headers: { 'retry-after': '3600' } });
+      const hf = HiggsfieldClient.withTransport(transport);
+
+      const pending = hf.tryon.create({
+        soulId: 's',
+        garmentImage: 'https://cdn.example.com/g.jpg',
+      });
+      // Uncapped, the retry would sleep 3_600_000ms and this advance would never release it.
+      await vi.advanceTimersByTimeAsync(30_000);
+      const jobSet = await pending;
+
+      expect(jobSet.id).toBeTruthy();
+      expect(transport.requests).toHaveLength(2); // 429, then 200 after the capped wait
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('request logging', () => {
+  it('fires exactly one onRequest event for a terminal 422', async () => {
+    const events: RequestLogEvent[] = [];
+    const transport = new MockTransport();
+    transport.queueFailure({ status: 422, body: { message: 'bad payload' } });
+    const hf = HiggsfieldClient.withTransport(transport, { onRequest: (e) => events.push(e) });
+
+    await expect(
+      hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' }),
+    ).rejects.toThrow(ValidationError);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ status: 422, attempt: 1, error: 'bad payload' });
+  });
+
+  it('fires exactly one onRequest event per attempt when retries are exhausted', async () => {
+    const events: RequestLogEvent[] = [];
+    const transport = new MockTransport();
+    transport.queueFailure({ status: 500 });
+    transport.queueFailure({ status: 500 });
+    const hf = HiggsfieldClient.withTransport(transport, {
+      maxRetries: 1,
+      onRequest: (e) => events.push(e),
+    });
+
+    await expect(
+      hf.tryon.create({ soulId: 's', garmentImage: 'https://cdn.example.com/g.jpg' }),
+    ).rejects.toMatchObject({ code: 'server' });
+
+    expect(events.map((e) => [e.attempt, e.status])).toEqual([
+      [1, 500],
+      [2, 500],
+    ]);
+  });
 });
 
 describe('souls', () => {
@@ -148,6 +208,17 @@ describe('souls', () => {
     const afterDelete = await hf.souls.list();
     expect(afterDelete.map((s) => s.id)).not.toContain(soul.id);
   });
+
+  it('returns a moderation-flagged (nsfw) soul instead of polling to timeout', async () => {
+    const hf = HiggsfieldClient.mock({ pollsToComplete: 2, soulOutcome: 'nsfw' });
+    const soul = await hf.souls.create({
+      name: 'Amara',
+      selfies: ['https://cdn.example.com/s1.jpg'],
+    });
+
+    const flagged = await hf.souls.waitUntilReady(soul.id, { ...FAST_POLL, timeoutMs: 5_000 });
+    expect(flagged.status).toBe('nsfw');
+  });
 });
 
 describe('cancellation', () => {
@@ -164,6 +235,24 @@ describe('cancellation', () => {
     );
     setTimeout(() => controller.abort(), 10);
     await expect(pending).rejects.toMatchObject({ code: 'aborted' });
+  });
+
+  it('aborts souls.waitUntilReady with an AbortError', async () => {
+    const hf = HiggsfieldClient.mock({ pollsToComplete: 10_000 });
+    const soul = await hf.souls.create({
+      name: 'Amara',
+      selfies: ['https://cdn.example.com/s1.jpg'],
+    });
+    const controller = new AbortController();
+    const pending = hf.souls.waitUntilReady(soul.id, {
+      ...FAST_POLL,
+      timeoutMs: 60_000,
+      delayMs: 50,
+      signal: controller.signal,
+    });
+    setTimeout(() => controller.abort(), 10);
+    await expect(pending).rejects.toMatchObject({ code: 'aborted' });
+    await expect(pending).rejects.toBeInstanceOf(AbortError);
   });
 });
 

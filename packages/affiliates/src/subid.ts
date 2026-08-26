@@ -35,6 +35,17 @@ export function encodeSubId(attribution: ClickAttribution): string {
     const scaled = segments.map((s) =>
       s.length === 0 ? s : s.slice(0, Math.max(1, Math.floor((s.length * budget) / totalLen))),
     );
+    // Forced 1-char minimums can push the total past the budget; trim the
+    // overflow from the longest segments (never below 1 char).
+    let excess = scaled.reduce((sum, s) => sum + s.length, 0) - budget;
+    while (excess > 0) {
+      const i = scaled.reduce((max, s, j) => (s.length > (scaled[max]?.length ?? 0) ? j : max), 0);
+      const longest = scaled[i];
+      if (longest === undefined || longest.length <= 1) break; // cannot shrink further
+      const cut = Math.min(excess, longest.length - 1);
+      scaled[i] = longest.slice(0, longest.length - cut);
+      excess -= cut;
+    }
     return [VERSION, ...scaled].join('.');
   }
 

@@ -33,4 +33,13 @@ describe('parseFeed', () => {
     expect(errors.map((e) => e.index)).toEqual([0, 2, 3]);
     expect(errors[0]?.message.length).toBeGreaterThan(0);
   });
+
+  it('rejects non-http(s) productUrl schemes', () => {
+    const jsRow = { ...goodRow, productUrl: 'javascript:alert(1)' };
+    const fileRow = { ...goodRow, productUrl: 'file:///etc/passwd' };
+    const { products, errors } = parseFeed([jsRow, fileRow, goodRow]);
+    expect(products).toHaveLength(1);
+    expect(products[0]?.productUrl).toBe(goodRow.productUrl);
+    expect(errors.map((e) => e.index)).toEqual([0, 1]);
+  });
 });

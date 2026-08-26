@@ -7,8 +7,9 @@ import { ENDPOINTS, path } from '../endpoints';
 import { estimateCostUsd } from '../costs';
 import { PollTimeoutError } from '../errors';
 import type { HttpClient } from '../http';
+import { sleep } from '../polling';
 import { parseSoul, parseSoulList, type Soul } from '../schemas';
-import { toImageInput } from '../types';
+import { TERMINAL_STATUSES, toImageInput } from '../types';
 import type { ImageInputLike, PollOptions, UsageEvent } from '../types';
 
 export interface CreateSoulParams {
@@ -76,7 +77,7 @@ export class SoulsResource {
     return parseSoulList(payload);
   }
 
-  /** Poll until the avatar finishes training (statuses vary; terminal = completed). */
+  /** Poll until the avatar reaches a terminal status (completed/failed/nsfw/canceled). */
   async waitUntilReady(soulId: string, options: PollOptions = {}): Promise<Soul> {
     const timeoutMs = options.timeoutMs ?? 300_000; // avatar training runs longer than renders
     const delayMs = options.delayMs ?? 3_000;
@@ -84,29 +85,14 @@ export class SoulsResource {
 
     for (;;) {
       const soul = await this.get(soulId, { signal: options.signal });
-      if (soul.status === 'completed') return soul;
-      if (soul.status === 'failed' || soul.status === 'canceled') {
-        return soul; // caller inspects status; failure here isn't an HTTP error
+      if (TERMINAL_STATUSES.has(soul.status)) {
+        return soul; // caller inspects status; failed/nsfw/canceled here isn't an HTTP error
       }
       const elapsed = Date.now() - startedAt;
       if (elapsed + delayMs > timeoutMs) {
         throw new PollTimeoutError(soulId, elapsed);
       }
-      await new Promise<void>((resolve, reject) => {
-        if (options.signal?.aborted) {
-          reject(new Error('aborted'));
-          return;
-        }
-        const timer = setTimeout(resolve, delayMs);
-        options.signal?.addEventListener(
-          'abort',
-          () => {
-            clearTimeout(timer);
-            reject(new Error('aborted'));
-          },
-          { once: true },
-        );
-      });
+      await sleep(delayMs, options.signal);
     }
   }
 

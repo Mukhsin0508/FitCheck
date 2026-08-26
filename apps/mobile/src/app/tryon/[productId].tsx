@@ -104,10 +104,10 @@ export default function TryOnScreen() {
     if (active && activeProduct) openBuyLink(activeProduct, active.id).catch(() => {});
   };
 
+  // A pasted value is the product PAGE url, not an image — never feed it to
+  // <Image>. Undefined shows RenderingPhase's skeleton placeholder instead.
   const garmentSource = isPasted
-    ? pastedUrl
-      ? { uri: pastedUrl }
-      : undefined
+    ? undefined
     : product
       ? productImageSource(product)
       : undefined;

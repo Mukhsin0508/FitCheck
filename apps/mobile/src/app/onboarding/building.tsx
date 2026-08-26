@@ -4,11 +4,12 @@
  * draft and writes the finished avatar to the store.
  */
 
+import { File, Paths } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { BackHandler, Platform, View } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -37,6 +38,37 @@ const LINE_MS = 1200;
 const BUILD_MS = 4500;
 const REVEAL_MS = 1500;
 
+/** Where the kept selfie lives once onboarding finishes. */
+const PORTRAIT_FILENAME = 'avatar-portrait.jpg';
+
+/**
+ * Move the kept selfie out of the evictable cache into the document directory,
+ * then sweep every draft cache file. Returns the uri to persist — the cache
+ * uri as a fallback when the copy fails, so the avatar still shows.
+ */
+function persistPortrait(firstUri: string | undefined): string | undefined {
+  let localUri = firstUri;
+  if (firstUri) {
+    try {
+      const portrait = new File(Paths.document, PORTRAIT_FILENAME);
+      new File(firstUri).copySync(portrait, { overwrite: true });
+      localUri = portrait.uri;
+    } catch {
+      // Copy failed — keep the cache uri rather than losing the avatar.
+    }
+  }
+  for (const uri of draft.uris) {
+    if (uri === localUri) continue; // the fallback uri is still in use
+    try {
+      const file = new File(uri);
+      if (file.exists) file.delete();
+    } catch {
+      // Best effort — the OS reclaims the cache eventually anyway.
+    }
+  }
+  return localUri;
+}
+
 export default function OnboardingBuilding() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -55,6 +87,14 @@ export default function OnboardingBuilding() {
   const progress = useSharedValue(0);
   const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
   const barStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
+
+  // Android hardware back mid-build would pop the stack before completeAvatar
+  // runs; block it to match the disabled iOS swipe gesture.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (ambushed.current) {
@@ -87,7 +127,7 @@ export default function OnboardingBuilding() {
       completeAvatar({
         name: undefined,
         imageKey: firstUri ? undefined : 'avatar',
-        localUri: firstUri,
+        localUri: persistPortrait(firstUri),
         selfieCount: draft.uris.length,
       });
       draft.reset();

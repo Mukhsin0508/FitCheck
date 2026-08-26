@@ -24,9 +24,14 @@ export default function ClosetScreen() {
   const removeFromCloset = useStore((s) => s.removeFromCloset);
 
   const confirmRemove = (item: ClosetItem) => {
-    if (Platform.OS !== 'web') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+    if (Platform.OS === 'web') {
+      // Alert.alert is a no-op on react-native-web — confirm and remove directly.
+      if (globalThis.confirm(`Take it out?\n\n${item.title}`)) {
+        removeFromCloset(item.renderId);
+      }
+      return;
     }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     Alert.alert('Take it out?', item.title, [
       { text: 'Cancel', style: 'cancel' },
       {

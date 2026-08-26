@@ -23,6 +23,13 @@ export interface TryOnRun {
 /** Short hold after the render resolves so the bar visibly hits 100%. */
 const FINISH_HOLD_MS = 380;
 
+/** Cancellation surfaces as DOMException 'AbortError' or a provider error with code 'aborted'. */
+function isAbortRejection(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const { name, code } = error as { name?: unknown; code?: unknown };
+  return name === 'AbortError' || code === 'aborted';
+}
+
 export function useTryOnRun(productId: string, pastedUrl?: string): TryOnRun {
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<TryOnRunStatus>('rendering');
@@ -53,8 +60,10 @@ export function useTryOnRun(productId: string, pastedUrl?: string): TryOnRun {
       return;
     }
 
+    const controller = new AbortController();
+
     tryOnService
-      .tryOn(request)
+      .tryOn(request, { signal: controller.signal })
       .then((result) => {
         if (!isCurrent()) return;
         setRender(result);
@@ -63,9 +72,18 @@ export function useTryOnRun(productId: string, pastedUrl?: string): TryOnRun {
           if (isCurrent()) setStatus('done');
         }, FINISH_HOLD_MS);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        // An aborted run was cancelled on purpose — never surface it as an error.
+        if (controller.signal.aborted || isAbortRejection(error)) return;
         if (isCurrent()) setStatus('error');
       });
+
+    return () => {
+      // Clear the key so a remount (incl. StrictMode's re-invocation) restarts
+      // the run, and so late settlements fail the isCurrent() check above.
+      if (runKeyRef.current === key) runKeyRef.current = '';
+      controller.abort();
+    };
   }, [productId, pastedUrl, attempt]);
 
   const retry = useCallback(() => setAttempt((a) => a + 1), []);

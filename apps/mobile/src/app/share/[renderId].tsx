@@ -78,6 +78,18 @@ export default function ShareScreen() {
   const [saved, setSaved] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
+  function switchLayout(next: FitCardLayout) {
+    if (next === layout) return;
+    setLayout(next);
+    // The new card hasn't been saved yet — re-enable "Save to photos".
+    setSaved(false);
+  }
+
+  function close() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)');
+  }
+
   async function captureCard(): Promise<string | null> {
     const node = cardRef.current;
     if (!node) return null;
@@ -145,7 +157,7 @@ export default function ShareScreen() {
           title="Can't find that fit"
           body="It may have been cleared when your avatar changed. Render it again and it'll be right here."
           actionLabel="Close"
-          onAction={() => router.back()}
+          onAction={close}
         />
       </Screen>
     );
@@ -159,8 +171,8 @@ export default function ShareScreen() {
         entering={FadeInDown.duration(300)}
         style={{ flexDirection: 'row', gap: spacing.s, marginVertical: spacing.l }}
       >
-        <Chip label="Side by side" selected={layout === 'side'} onPress={() => setLayout('side')} />
-        <Chip label="The grid" selected={layout === 'grid'} onPress={() => setLayout('grid')} />
+        <Chip label="Side by side" selected={layout === 'side'} onPress={() => switchLayout('side')} />
+        <Chip label="The grid" selected={layout === 'grid'} onPress={() => switchLayout('grid')} />
       </Animated.View>
 
       <Animated.View entering={FadeInDown.duration(300).delay(60)}>

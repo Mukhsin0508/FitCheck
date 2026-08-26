@@ -32,8 +32,6 @@ function EditorialTabBar({ state, navigation }: TabBarProps) {
         backgroundColor: colors.bg,
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: colors.border,
-        paddingBottom: Math.max(insets.bottom, spacing.m),
-        paddingTop: spacing.m,
       }}
     >
       {state.routes.map((route, index) => {
@@ -48,7 +46,15 @@ function EditorialTabBar({ state, navigation }: TabBarProps) {
             onPress={() => {
               if (!focused) navigation.navigate(route.name);
             }}
-            style={{ flex: 1, alignItems: 'center', gap: 6 }}
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              gap: 6,
+              // Vertical padding lives on the pressable (not the bar) so the
+              // whole bar height is tappable — keeps the hit target >= 44pt.
+              paddingTop: spacing.m,
+              paddingBottom: Math.max(insets.bottom, spacing.m),
+            }}
           >
             <AppText
               variant="micro"

@@ -43,7 +43,11 @@ export function ModalHeader({ overline }: ModalHeaderProps) {
         <PressableScale
           accessibilityRole="button"
           accessibilityLabel="Close"
-          onPress={() => router.back()}
+          onPress={() => {
+            // Cold-start deep links open modals with an empty back stack.
+            if (router.canGoBack()) router.back();
+            else router.replace('/(tabs)');
+          }}
           style={{
             width: 36,
             height: 36,

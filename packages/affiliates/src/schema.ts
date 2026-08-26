@@ -93,8 +93,15 @@ export const productSchema = z.object({
   category: z.enum(['outerwear', 'dress']),
   priceCents: z.number().int().nonnegative(),
   currency: z.string().length(3),
-  productUrl: z.string().url(),
-  imageUrl: z.string().url().optional(),
+  productUrl: z
+    .string()
+    .url()
+    .refine((u) => /^https?:\/\//i.test(u), 'productUrl must be http(s)'),
+  imageUrl: z
+    .string()
+    .url()
+    .refine((u) => /^https?:\/\//i.test(u), 'imageUrl must be http(s)')
+    .optional(),
   imageKey: z.string().optional(),
   commissionPct: z.number().nonnegative(),
   colors: z.array(z.string()).optional(),

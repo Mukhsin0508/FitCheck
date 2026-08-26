@@ -43,6 +43,9 @@ export interface RequestOptions {
 
 const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
+/** Ceiling on honored Retry-After — a hostile/misconfigured header must not stall request() for hours. */
+const MAX_RETRY_AFTER_MS = 30_000;
+
 export function generateRequestId(prefix = 'req'): string {
   // Hermes may lack crypto.randomUUID; fall back to time + randomness.
   const cryptoObj = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
@@ -152,8 +155,11 @@ export class HttpClient {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const startedAt = Date.now();
+      // The try/catch wraps only the transport call, so response-mapped errors
+      // thrown below are never re-caught (and re-logged) by the same iteration.
+      let response: TransportResponse;
       try {
-        const response = await this.transport.request({
+        response = await this.transport.request({
           method: req.method,
           url,
           headers,
@@ -161,21 +167,6 @@ export class HttpClient {
           timeoutMs: this.options.timeoutMs,
           signal: req.signal,
         });
-
-        if (response.status >= 200 && response.status < 300) {
-          this.log(req, response.status, attempt, startedAt, requestId);
-          return response.json as T;
-        }
-
-        const error = mapResponseError(response, requestId);
-        this.log(req, response.status, attempt, startedAt, requestId, error.message);
-        if (attempt < maxAttempts && isRetryable(error)) {
-          lastError = error;
-          const retryAfterMs = error instanceof RateLimitError ? error.retryAfterMs : undefined;
-          await sleep(retryAfterMs ?? backoffMs(attempt), req.signal);
-          continue;
-        }
-        throw error;
       } catch (error) {
         if (error instanceof AbortError) throw error;
         if (!(error instanceof HiggsfieldError)) throw error;
@@ -187,6 +178,24 @@ export class HttpClient {
         }
         throw error;
       }
+
+      if (response.status >= 200 && response.status < 300) {
+        this.log(req, response.status, attempt, startedAt, requestId);
+        return response.json as T;
+      }
+
+      const error = mapResponseError(response, requestId);
+      this.log(req, response.status, attempt, startedAt, requestId, error.message);
+      if (attempt < maxAttempts && isRetryable(error)) {
+        lastError = error;
+        const retryAfterMs = error instanceof RateLimitError ? error.retryAfterMs : undefined;
+        await sleep(
+          retryAfterMs !== undefined ? Math.min(retryAfterMs, MAX_RETRY_AFTER_MS) : backoffMs(attempt),
+          req.signal,
+        );
+        continue;
+      }
+      throw error;
     }
 
     // Unreachable: the loop either returns or throws. Kept for exhaustiveness.

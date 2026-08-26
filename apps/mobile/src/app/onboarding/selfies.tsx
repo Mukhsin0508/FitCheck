@@ -5,11 +5,12 @@
  */
 
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
+import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Linking, Platform, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
@@ -45,11 +46,15 @@ export default function OnboardingSelfies() {
   const isFullBody = uris.length === TOTAL - 1;
   const done = uris.length >= TOTAL;
 
-  useEffect(() => {
-    if (!done) return;
-    const timer = setTimeout(() => router.push('/onboarding/building'), 400);
-    return () => clearTimeout(timer);
-  }, [done, router]);
+  // Focus-gated so returning here (e.g. Android back from the build screen)
+  // re-arms the auto-advance instead of stranding a "Building…" dead end.
+  useFocusEffect(
+    useCallback(() => {
+      if (!done) return;
+      const timer = setTimeout(() => router.push('/onboarding/building'), 400);
+      return () => clearTimeout(timer);
+    }, [done, router]),
+  );
 
   const addPhotos = (incoming: string[]) => {
     if (incoming.length === 0) return;
@@ -64,11 +69,21 @@ export default function OnboardingSelfies() {
   };
 
   const removePhoto = (index: number) => {
+    const removed = uris[index];
     setUris((prev) => {
       const next = prev.filter((_, i) => i !== index);
       draft.uris = next;
       return next;
     });
+    // A dropped photo shouldn't linger in the cache — best-effort delete.
+    if (removed) {
+      try {
+        const file = new File(removed);
+        if (file.exists) file.delete();
+      } catch {
+        // The OS reclaims the cache eventually anyway.
+      }
+    }
   };
 
   const takePhoto = async () => {

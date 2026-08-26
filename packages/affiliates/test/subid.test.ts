@@ -40,6 +40,22 @@ describe('subid codec', () => {
     expect(decoded?.sessionId.length).toBe(decoded?.userId.length);
   });
 
+  it('stays within 99 chars when forced 1-char minimums would overshoot', () => {
+    // One huge segment + tiny siblings: the 1-char floors used to push the
+    // total to 100, which decodeSubId itself rejects.
+    const attribution = { userId: 'u'.repeat(150), sessionId: 's', productId: 'p' };
+    const subId = encodeSubId(attribution);
+    expect(subId.length).toBeLessThanOrEqual(99);
+    const decoded = decodeSubId(subId);
+    expect(decoded).toBeDefined();
+    // Truncated ids won't equal the originals, but every segment must be a
+    // prefix of what was encoded.
+    expect(attribution.userId.startsWith(decoded!.userId)).toBe(true);
+    expect(attribution.sessionId.startsWith(decoded!.sessionId)).toBe(true);
+    expect(attribution.productId.startsWith(decoded!.productId)).toBe(true);
+    expect(decoded?.renderId).toBeUndefined();
+  });
+
   it('keeps short subids untouched', () => {
     const subId = encodeSubId({ userId: 'u', sessionId: 's', productId: 'p', renderId: 'r' });
     expect(subId).toBe('v1.u.s.p.r');

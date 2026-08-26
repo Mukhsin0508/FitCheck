@@ -14,8 +14,8 @@ type Step = {
 const STEPS: Step[] = [
   {
     num: "01",
-    title: "Five selfies, one avatar",
-    body: "Shoot them in whatever light you have. Higgsfield Soul builds a photoreal you in about a minute, and it only ever exists for your try-ons.",
+    title: "A few selfies, one avatar",
+    body: "Shoot them in whatever light you have. Higgsfield Soul builds a photoreal you, and it only ever exists for your try-ons.",
     src: "/media/avatar.jpg",
     alt: "A photoreal avatar portrait built from selfies",
     width: 1000,

@@ -52,7 +52,7 @@ export default function PasteUrlScreen() {
 
   return (
     <Screen safeTop={Platform.OS !== 'ios'} contentStyle={{ flexGrow: 1 }}>
-      <ModalHeader overline="The wow trick" />
+      <ModalHeader overline="Any store works" />
 
       <Animated.View entering={FadeInDown.duration(300)} style={{ gap: spacing.m, marginTop: spacing.xl }}>
         <AppText variant="title">Paste any product link</AppText>

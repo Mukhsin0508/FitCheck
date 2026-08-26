@@ -116,6 +116,13 @@ export interface RenderingPhaseProps {
 export function RenderingPhase({ garmentSource, complete = false }: RenderingPhaseProps) {
   const { width } = useWindowDimensions();
   const scale = useSharedValue(1);
+  // A source that fails to load falls back to the skeleton instead of an
+  // invisible box (the breathing container has no background of its own).
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [garmentSource]);
 
   useEffect(() => {
     scale.value = withRepeat(
@@ -149,12 +156,13 @@ export function RenderingPhase({ garmentSource, complete = false }: RenderingPha
           breathing,
         ]}
       >
-        {garmentSource ? (
+        {garmentSource && !imageFailed ? (
           <Image
             source={garmentSource}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
             transition={200}
+            onError={() => setImageFailed(true)}
             accessibilityLabel="The garment being fitted"
           />
         ) : (

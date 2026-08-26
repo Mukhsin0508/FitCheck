@@ -5,6 +5,7 @@
 
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
+import { useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -61,15 +62,20 @@ export default function ProfileScreen() {
   const renderCount = useStore(selectRenderCount);
   const spendUsd = useStore(selectTotalSpendUsd);
   const resetAvatar = useStore((state) => state.resetAvatar);
+  const purgeEverything = useStore((state) => state.purgeEverything);
+  const [failedUri, setFailedUri] = useState<string | null>(null);
 
-  const portrait = avatar.localUri
-    ? { uri: avatar.localUri }
-    : demoImages[avatar.imageKey ?? 'avatar'];
+  // cacheKey: the portrait file is overwritten in place on rebuild, so the
+  // avatar version keeps expo-image from serving a stale cached copy.
+  const portrait =
+    avatar.localUri && avatar.localUri !== failedUri
+      ? { uri: avatar.localUri, cacheKey: `avatar-v${avatar.version}` }
+      : demoImages[avatar.imageKey ?? 'avatar'];
 
   function handleRedoAvatar() {
     confirmDestructive(
       'Redo your avatar?',
-      "New avatar wipes your renders — they won't look like you anymore.",
+      "New avatar wipes your renders and saved closet — they won't look like you anymore.",
       'Redo it',
       () => resetAvatar(),
     );
@@ -78,9 +84,9 @@ export default function ProfileScreen() {
   function handleDeleteEverything() {
     confirmDestructive(
       'Delete everything?',
-      'Selfies, renders, closet — all of it, gone from this phone.',
+      'Selfies, renders, closet, try-on history — all of it, gone from this phone.',
       'Delete it',
-      () => resetAvatar(),
+      () => purgeEverything(),
     );
   }
 
@@ -110,6 +116,10 @@ export default function ProfileScreen() {
               contentFit="cover"
               transition={200}
               accessibilityLabel="Your avatar portrait"
+              onError={() => {
+                // Portrait file went missing — fall back to the demo face.
+                if (avatar.localUri) setFailedUri(avatar.localUri);
+              }}
               style={{ width: '100%', height: '100%', borderRadius: radius.pill }}
             />
           ) : (
@@ -151,8 +161,8 @@ export default function ProfileScreen() {
       <Animated.View entering={FadeInDown.duration(300).delay(180)} style={{ gap: spacing.m }}>
         <SectionHeader title="Privacy" />
         <AppText muted>
-          Your selfies live on this phone. Production FitCheck encrypts them, never trains on
-          them, and deletes everything with your account.
+          Your selfies stay on this phone — this build never uploads them. Delete below and
+          they're gone, along with your renders, closet, and try-on history.
         </AppText>
         <Button
           label="Delete everything on this phone"

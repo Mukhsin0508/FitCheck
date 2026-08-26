@@ -12,7 +12,8 @@ const DEFAULTS = {
   backoffFactor: 1.5,
 } as const;
 
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+/** Abort-aware delay: resolves after `ms`, rejects with {@link AbortError} when the signal fires. */
+export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
       reject(new AbortError());

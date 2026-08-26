@@ -7,10 +7,22 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { CostRecord, TryOnRender } from '@fitcheck/tryon';
+import { File } from 'expo-file-system';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { generateId } from '@/lib/ids';
+
+/** Best-effort removal of the avatar portrait file from disk. */
+function deletePortraitFile(localUri: string | undefined): void {
+  if (!localUri) return;
+  try {
+    const file = new File(localUri);
+    if (file.exists) file.delete();
+  } catch {
+    // Already gone, or the platform can't touch it — the state reset still wins.
+  }
+}
 
 export type AvatarStatus = 'none' | 'ready';
 
@@ -55,6 +67,8 @@ interface FitCheckState {
 
   completeAvatar: (avatar: Omit<AvatarState, 'status' | 'version'>) => void;
   resetAvatar: () => void;
+  /** "Delete everything on this phone": files, persisted state, and identity. */
+  purgeEverything: () => void;
   addToCloset: (item: ClosetItem) => void;
   removeFromCloset: (renderId: string) => void;
   cacheRender: (key: string, render: TryOnRender) => void;
@@ -78,13 +92,30 @@ export const useStore = create<FitCheckState>()(
           renders: {},
         })),
 
-      // Privacy path: drops selfie refs, renders, and closet in one move.
-      resetAvatar: () =>
+      // Privacy path: drops the portrait file, selfie refs, renders, and closet.
+      resetAvatar: () => {
+        deletePortraitFile(get().avatar.localUri);
         set((state) => ({
           avatar: { status: 'none', version: state.avatar.version + 1 },
           renders: {},
           closet: [],
-        })),
+        }));
+      },
+
+      // Deletes the portrait file, purges the persisted store, and starts over
+      // as a brand-new identity — nothing survives, on disk or in AsyncStorage.
+      purgeEverything: () => {
+        deletePortraitFile(get().avatar.localUri);
+        useStore.persist.clearStorage();
+        set({
+          userId: generateId('user'),
+          sessionId: generateId('sess'),
+          avatar: { status: 'none', version: 0 },
+          closet: [],
+          renders: {},
+          costLog: [],
+        });
+      },
 
       addToCloset: (item) =>
         set((state) => ({
