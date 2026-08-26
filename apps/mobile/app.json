@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
+      "icon": "./assets/images/icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "FitCheck uses your camera to take the selfies that build your avatar. Photos stay on your device until you create an avatar, and are never used for training.",
         "NSPhotoLibraryUsageDescription": "FitCheck can pick selfies from your library to build your avatar, and save your fit checks back to it.",
@@ -18,9 +19,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F6F4EF",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
