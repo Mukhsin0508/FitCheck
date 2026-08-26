@@ -32,23 +32,26 @@ export function Hero() {
           </div>
         </div>
 
-        {/* The app, live: browse -> try on -> real render -> share card. */}
-        <figure className="mx-auto w-[15.5rem] shrink-0 sm:w-[17rem]">
-          <div className="rounded-[2.75rem] border border-line bg-surface p-2 shadow-[0_24px_80px_-32px_rgba(19,19,19,0.45)]">
-            <video
-              src="/media/app-walkthrough.mp4"
-              poster="/media/app-walkthrough-poster.jpg"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              aria-label="A recorded walkthrough of the FitCheck app: browsing the catalog, rendering a dress on the avatar, and sharing the fit check"
-              className="aspect-[1206/2622] w-full rounded-[2.25rem] object-cover"
-            />
+        {/* The actual app, running in the page — not a video. */}
+        <figure className="mx-auto w-[19rem] shrink-0 sm:w-[21rem]">
+          <div className="relative rounded-[2.75rem] border border-line bg-surface p-2 shadow-[0_24px_80px_-32px_rgba(19,19,19,0.45)]">
+            <span className="absolute -top-3 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-medium tracking-wide">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" aria-hidden />
+              live — this is the app
+            </span>
+            <div
+              className="aspect-[1206/2622] w-full overflow-hidden rounded-[2.25rem] bg-[url(/media/app-walkthrough-poster.jpg)] bg-cover bg-center"
+            >
+              <iframe
+                src="/app/"
+                title="FitCheck, running live: set up the demo avatar, browse the catalog, try garments on, save fits, build a share card"
+                allow="camera"
+                className="h-full w-full border-0"
+              />
+            </div>
           </div>
           <figcaption className="mt-3 text-center text-xs tracking-wide text-muted">
-            the real app, one take — render included
+            click around — try something on her
           </figcaption>
         </figure>
       </div>
