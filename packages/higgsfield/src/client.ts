@@ -6,6 +6,7 @@ import { ImagesResource } from './resources/images';
 import { JobsResource } from './resources/jobs';
 import { SoulsResource } from './resources/souls';
 import { TryOnResource } from './resources/tryon';
+import { UploadsResource } from './resources/uploads';
 import type { CostEstimate, HiggsfieldClientOptions } from './types';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -43,6 +44,7 @@ export class HiggsfieldClient {
   readonly tryon: TryOnResource;
   readonly images: ImagesResource;
   readonly jobs: JobsResource;
+  readonly uploads: UploadsResource;
 
   private constructor(transport: Transport, options: HiggsfieldClientOptions) {
     const credentials = resolveCredentials(options);
@@ -64,6 +66,7 @@ export class HiggsfieldClient {
     this.souls = new SoulsResource(http, options.onUsage, options.soulsBasePath);
     this.tryon = new TryOnResource(http, this.jobs, options.onUsage, options.tryOnEndpoint);
     this.images = new ImagesResource(http, this.jobs, options.onUsage);
+    this.uploads = new UploadsResource(http, options.fetch ?? globalThis.fetch?.bind(globalThis));
   }
 
   /** Billing-grade quote from POST /estimate/{endpoint}. Shortcut for `jobs.estimateRemote`. */

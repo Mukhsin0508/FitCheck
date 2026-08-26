@@ -40,6 +40,7 @@ export {
 export type { CreateTryOnParams } from './resources/tryon';
 export type { CreateSoulParams } from './resources/souls';
 export type { GenerateImageParams } from './resources/images';
+export type { UploadTarget } from './resources/uploads';
 
 export {
   TERMINAL_STATUSES,

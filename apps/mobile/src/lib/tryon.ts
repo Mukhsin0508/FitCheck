@@ -20,6 +20,7 @@ import {
 } from '@fitcheck/tryon';
 
 import { assetRef } from '@/lib/images';
+import { RealHiggsfieldProvider, higgsfieldCredentials } from '@/lib/realProvider';
 import { useStore } from '@/state/store';
 
 /** Stable demo mapping: featured garment → matching generated fit image. */
@@ -68,13 +69,21 @@ const storeRenderCache: RenderCache = {
 /** Feels like a real render (~5s) without being annoying in dev. */
 const DEMO_RENDER_DELAY_MS = 4_800;
 
+const demoProvider = new MockTryOnProvider({
+  resolveImage: resolveDemoFit,
+  delayMs: DEMO_RENDER_DELAY_MS,
+});
+
+/**
+ * Real renders first when dev credentials are present (.env), demo renders as
+ * the safety net — a failing API call falls through instead of breaking the app.
+ */
+const credentials = higgsfieldCredentials();
 export const tryOnService = new TryOnService({
-  providers: [
-    new MockTryOnProvider({
-      resolveImage: resolveDemoFit,
-      delayMs: DEMO_RENDER_DELAY_MS,
-    }),
-  ],
+  providers: credentials
+    ? [new RealHiggsfieldProvider(credentials), demoProvider]
+    : [demoProvider],
+  fallbackOnError: true,
   cache: storeRenderCache,
   onCost: (record) => useStore.getState().logCost(record),
 });
